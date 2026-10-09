@@ -1,9 +1,11 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
+import { Medidor } from '@/components/Medidor'
 import { Nav } from '@/components/Nav'
 import { Palco, PalcoReserva, usePode3D } from '@/components/Palco'
 import { devePreCarregar, Preloader } from '@/components/Preloader'
 import { BotaoFlutuante, Rodape } from '@/components/Rodape'
 import { scrollToSection, useSmoothScroll } from '@/hooks/useSmoothScroll'
+import { useEfeitos } from '@/hooks/useEfeitos'
 import { useRevela } from '@/hooks/useRevela'
 import { Heroi } from '@/sections/Heroi'
 
@@ -23,6 +25,7 @@ export default function App() {
   useSmoothScroll()
   useMouseNaRaiz()
   useRevela()
+  useEfeitos()
 
   const [abertura] = useState(() => devePreCarregar())
   const [pronto, setPronto] = useState(!abertura)
@@ -47,6 +50,7 @@ export default function App() {
       </main>
       <Rodape aoIr={scrollToSection} />
       <BotaoFlutuante />
+      <Medidor />
     </>
   )
 }

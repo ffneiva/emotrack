@@ -1,12 +1,15 @@
-# Deploy: S3 static website, direto no endpoint s3-website (sem domínio e
-# sem Cloudflare na frente — é uma proposta de site).
+# Deploy: S3 static website + Cloudflare na frente (sem CloudFront), em
+# emotrack.abramdigital.com.br.
 #
 # O repositório é público: nenhum ID, ARN ou token aqui. O ARN da role é
 # SECRET (o GitHub mascara sozinho no log); o resto, Variables.
 #
 #   Secrets:     AWS_ROLE_ARN
-#   Variables:   AWS_REGION, S3_BUCKET_NAME, S3_WEBSITE_ENDPOINT
+#   Variables:   AWS_REGION, S3_BUCKET_NAME, S3_WEBSITE_ENDPOINT, SITE_DOMINIO
 #   Environment: production (a role da AWS só confia nele)
+#
+# Sem purge da Cloudflare: o HTML vai com "max-age=0, must-revalidate" e a
+# borda não o guarda; os assets têm hash no nome.
 
 name: 🚀 Deploy
 
@@ -30,10 +33,11 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: production
-      url: http://${{ vars.S3_WEBSITE_ENDPOINT }}
+      url: https://${{ vars.SITE_DOMINIO }}
 
     env:
       BUCKET: ${{ vars.S3_BUCKET_NAME }}
+      DOMINIO: ${{ vars.SITE_DOMINIO }}
       ENDPOINT: ${{ vars.S3_WEBSITE_ENDPOINT }}
       ROTAS: /
       DIST: dist
@@ -122,7 +126,16 @@ jobs:
       - name: ✅ Smoke test
         run: |
           codigo() { curl -s -o /dev/null -w '%{http_code}' --max-time 20 "$1" || echo "000"; }
-          URL="http://$ENDPOINT"
+          if [ "$(codigo "https://$DOMINIO/")" = "200" ]; then
+            URL="https://$DOMINIO"
+          else
+            URL="http://$ENDPOINT"
+            echo "::warning::https://$DOMINIO não respondeu 200 — testando o endpoint s3-website."
+            if [ "$(codigo "$URL/")" = "403" ]; then
+              echo "::warning::Endpoint 403: policy restrita aos IPs da Cloudflare e o domínio ainda não responde. Nada a conferir."
+              exit 0
+            fi
+          fi
           echo "Conferindo $URL"
           falhou=0
           for rota in $ROTAS; do
@@ -152,6 +165,6 @@ jobs:
           {
             echo "### 🚀 Deploy concluído"
             echo ""
-            echo "- **Site:** ${SITE_URL:-http://$ENDPOINT}"
+            echo "- **Site:** ${SITE_URL:-https://$DOMINIO}"
             echo "- **Commit:** \`${{ github.sha }}\`"
           } >> "$GITHUB_STEP_SUMMARY"

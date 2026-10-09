@@ -1,5 +1,4 @@
 import {
-  NeutralToneMapping,
   AdditiveBlending,
   Color,
   DirectionalLight,
@@ -11,7 +10,8 @@ import {
   InstancedMesh,
   Matrix4,
   Mesh,
-  MeshPhysicalMaterial,
+  MeshStandardMaterial,
+  NeutralToneMapping,
   PerspectiveCamera,
   PlaneGeometry,
   PMREMGenerator,
@@ -28,10 +28,10 @@ import {
   type WebGLProgramParametersWithUniforms,
 } from 'three'
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
-import { CAPITULOS, type Capitulo, type IdFormacao } from '@/lib/capitulos'
+import { CAPITULOS, type Capitulo, capitulo, type IdFormacao } from '@/lib/capitulos'
 import { EMOCOES } from '@/lib/cores'
 import { MAX_REGISTROS } from '@/lib/semana'
-import { type Formacao, montarFormacoes, type Registro } from './formacoes'
+import { clima, fantasma, type Formacao, montarFormacoes, type Registro } from './formacoes'
 
 /**
  * A cena: N peças de quebra-cabeça — os mascotes das emoções do app, cada
@@ -91,8 +91,8 @@ function geometriaDaPeca(compacto: boolean) {
     bevelThickness: BISEL,
     bevelSize: 0.055,
     bevelOffset: -0.045,
-    bevelSegments: compacto ? 2 : 4,
-    curveSegments: compacto ? 6 : 11,
+    bevelSegments: compacto ? 1 : 2,
+    curveSegments: compacto ? 4 : 7,
   })
   g.translate(0, 0, -ESPESSURA / 2)
   g.computeVertexNormals()
@@ -100,7 +100,7 @@ function geometriaDaPeca(compacto: boolean) {
 }
 
 /** A cara, no shader do material físico (olhos, boca e bochechas). */
-function comRosto(mat: MeshPhysicalMaterial, uTempo: { value: number }) {
+function comRosto(mat: MeshStandardMaterial, uTempo: { value: number }) {
   mat.onBeforeCompile = (sh: WebGLProgramParametersWithUniforms) => {
     sh.uniforms.uTempo = uTempo
     sh.vertexShader = sh.vertexShader
@@ -210,10 +210,22 @@ function nucleoDaMaia() {
   return { grupo, esfera, halo }
 }
 
+/* ── o clima do diário ───────────────────────────────────────────────────── */
+
+export type Clima = { emocao: number; intensidade: number; momento: number }
+
+/** Manhã, tarde e noite: o fundo e o sol do gráfico mudam com o "Quando". */
+const MOMENTOS = [
+  { fundo: '#fff2dc', sol: '#fff1d6', forca: 2.3, ceu: 0.95 },
+  { fundo: '#ffd8c4', sol: '#ffab70', forca: 2.1, ceu: 0.75 },
+  { fundo: '#0c0a26', sol: '#8ea4ff', forca: 1.1, ceu: 0.4 },
+] as const
+
 /* ── a cena ──────────────────────────────────────────────────────────────── */
 
 const suave = (x: number) => x * x * (3 - 2 * x)
 const lim = (x: number, a = 0, b = 1) => Math.min(b, Math.max(a, x))
+const SOL_PADRAO = new Color('#fff4e6')
 
 export class Pecas {
   private renderer: WebGLRenderer
@@ -222,15 +234,32 @@ export class Pecas {
   private grupo = new Group()
   private malha: InstancedMesh
   private formacoes: Record<IdFormacao, Formacao>
-  private registros: Registro[] = []
+  private registros = new Map<number, Registro>()
   private n: number
+  private kFantasma: number
   private uTempo = { value: 0 }
   private nucleo = nucleoDaMaia()
   private fundo = new Color()
+  private sol: DirectionalLight
+  private ceu: HemisphereLight
   private aHumor: InstancedBufferAttribute
   private atraso: Float32Array
   private elevacao: Float32Array
   private empurrao: Float32Array
+  private ancoras: Record<IdFormacao, { id: string; a: readonly [number, number, number] }[]>
+  private leitura: Leitura = { rotulos: [] }
+
+  // O clima: alvo (do formulário) e valor suavizado (o que a cena usa).
+  private climaCor = new Color(EMOCOES[1].cor)
+  private climaCorSuave = new Color(EMOCOES[1].cor)
+  private climaFundo = new Color(MOMENTOS[0].fundo)
+  private climaFundoSuave = new Color(MOMENTOS[0].fundo)
+  private climaSol = new Color(MOMENTOS[0].sol)
+  private climaSolSuave = new Color(MOMENTOS[0].sol)
+  private climaForca: number = MOMENTOS[0].forca
+  private climaCeu: number = MOMENTOS[0].ceu
+  private intensidadeAlvo = 0
+  private corSuja = 120
 
   private s = 0
   private sAlvo = 0
@@ -249,14 +278,33 @@ export class Pecas {
   private compacto: boolean
   private calmo: boolean
   private raio = new Raycaster()
+
+  // Resolução adaptativa: mede o ritmo real e baixa a resolução se o aparelho não acompanha.
+  private dpr: number
+  private dprMax: number
+  private janelaT = 0
+  private janelaN = 0
+  private boas = 0
+  private pular = false
+  private dtGuardado = 0
   aoQuadro?: (l: Leitura) => void
 
   constructor(canvas: HTMLCanvasElement, { compacto, calmo }: Opcoes) {
     this.compacto = compacto
     this.calmo = calmo
-    this.n = compacto ? 192 : 240
-    this.renderer = new WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' })
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, compacto ? 1.6 : 1.75))
+    this.n = compacto ? 160 : 240
+    this.kFantasma = fantasma(this.n)
+    this.dprMax = Math.min(window.devicePixelRatio || 1, 1.5)
+    this.dpr = this.dprMax
+    // MSAA só em tela comum; em tela densa a própria resolução já suaviza.
+    this.renderer = new WebGLRenderer({
+      canvas,
+      antialias: (window.devicePixelRatio || 1) < 1.5,
+      alpha: false,
+      powerPreference: 'high-performance',
+      stencil: false,
+    })
+    this.renderer.setPixelRatio(this.dpr)
     this.renderer.outputColorSpace = SRGBColorSpace
     this.renderer.toneMapping = NeutralToneMapping
     this.renderer.toneMappingExposure = 1
@@ -264,23 +312,19 @@ export class Pecas {
     const pmrem = new PMREMGenerator(this.renderer)
     this.cena.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture
     pmrem.dispose()
-    this.cena.environmentIntensity = 0.6
+    this.cena.environmentIntensity = 0.55
 
-    this.cena.add(new HemisphereLight('#ffffff', '#5b4a8a', 0.9))
-    const sol = new DirectionalLight('#fff4e6', 2.1)
-    sol.position.set(6, 10, 12)
-    this.cena.add(sol)
+    this.ceu = new HemisphereLight('#ffffff', '#5b4a8a', 0.9)
+    this.cena.add(this.ceu)
+    this.sol = new DirectionalLight('#fff4e6', 2.1)
+    this.sol.position.set(6, 10, 12)
+    this.cena.add(this.sol)
     const recorte = new DirectionalLight('#9fd8ff', 1.1)
     recorte.position.set(-10, -4, -6)
     this.cena.add(recorte)
     this.cena.fog = new Fog('#100d2e', 22, 60)
 
-    const mat = new MeshPhysicalMaterial({
-      roughness: 0.4,
-      metalness: 0,
-      clearcoat: 0.4,
-      clearcoatRoughness: 0.3,
-    })
+    const mat = new MeshStandardMaterial({ roughness: 0.42, metalness: 0 })
     comRosto(mat, this.uTempo)
     const geo = geometriaDaPeca(compacto)
     this.aHumor = new InstancedBufferAttribute(new Float32Array(this.n), 1)
@@ -297,6 +341,10 @@ export class Pecas {
     this.grupo.add(this.nucleo.grupo)
 
     this.formacoes = montarFormacoes({ n: this.n, compacto }, this.registros)
+    this.ancoras = {} as typeof this.ancoras
+    for (const [id, f] of Object.entries(this.formacoes) as [IdFormacao, Formacao][]) {
+      this.ancoras[id] = Object.entries(f.ancoras).map(([nome, a]) => ({ id: nome, a }))
+    }
     // Cada peça sai um pouco antes ou depois (a revoada) e com um arco próprio.
     this.atraso = new Float32Array(this.n)
     this.elevacao = new Float32Array(this.n)
@@ -307,6 +355,7 @@ export class Pecas {
     }
     const c = new Color()
     for (let k = 0; k < this.n; k++) this.malha.setColorAt(k, c.setRGB(1, 1, 1))
+    this.definirClima({ emocao: 1, intensidade: 0, momento: 0 })
     this.atualizar(0)
   }
 
@@ -348,25 +397,36 @@ export class Pecas {
     this.segurando = false
   }
 
+  /** O formulário do diário mudou: a emoção pinta o fundo, a intensidade agita, o momento muda a luz. */
+  definirClima({ emocao, intensidade, momento }: Clima) {
+    const emo = EMOCOES[emocao]
+    this.climaCor.set(emo.cor)
+    const m = MOMENTOS[momento]
+    this.climaFundo.set(m.fundo)
+    this.climaSol.set(m.sol)
+    this.climaForca = m.forca
+    this.climaCeu = m.ceu
+    this.intensidadeAlvo = intensidade / 2
+    // A peça fantasma, sobre a coluna "Agora", vira a emoção escolhida.
+    const f = this.formacoes.padroes
+    this.climaCor.toArray(f.cor, this.kFantasma * 3)
+    f.humor[this.kFantasma] = emo.humor
+    this.corSuja = 90
+  }
+
   /** A pessoa registrou uma emoção: uma peça cai na coluna "Agora". */
   registrar(emocao: number): number {
-    const f = this.formacoes.padroes
-    const altura = this.registros.length % MAX_REGISTROS
-    if (this.registros.length >= MAX_REGISTROS) {
-      // Coluna cheia: recomeça de baixo (as peças antigas descem para o fundo).
-      this.registros.length = 0
-    }
+    if (this.registros.size >= MAX_REGISTROS) this.registros.clear()
+    const altura = this.registros.size
     const k = this.n - 1 - altura
+    const f = this.formacoes.padroes
     const emo = EMOCOES[emocao]
     new Color(emo.cor).toArray(f.cor, k * 3)
     f.humor[k] = emo.humor
     f.escala[k] = 1
-    this.registros.push({ k, emocao, t0: this.relogio, altura: this.registros.length })
-    return this.registros.length
-  }
-
-  limparRegistros() {
-    this.registros.length = 0
+    this.registros.set(k, { k, emocao, t0: this.relogio, altura })
+    this.corSuja = 90
+    return this.registros.size
   }
 
   iniciar() {
@@ -375,13 +435,43 @@ export class Pecas {
     this.ultimo = performance.now()
     const laco = (agora: number) => {
       if (!this.rodando) return
-      const dt = Math.min(0.05, (agora - this.ultimo) / 1000)
+      const real = (agora - this.ultimo) / 1000
       this.ultimo = agora
-      this.atualizar(dt)
-      this.renderer.render(this.cena, this.camera)
+      this.medirRitmo(real)
+      // No celular, parado (sem rolar nem tocar), meio quadro basta: a cena
+      // continua viva e a bateria agradece.
+      const parado = Math.abs(this.sAlvo - this.s) < 1e-3 && !this.segurando && Math.abs(this.inercia) < 0.01
+      this.dtGuardado += real
+      this.pular = this.compacto && parado ? !this.pular : false
+      if (!this.pular) {
+        this.atualizar(Math.min(0.05, this.dtGuardado))
+        this.dtGuardado = 0
+        this.renderer.render(this.cena, this.camera)
+      }
       this.quadro = requestAnimationFrame(laco)
     }
     this.quadro = requestAnimationFrame(laco)
+  }
+
+  private medirRitmo(real: number) {
+    if (real > 0.1) return // aba voltando, travada pontual: não é o ritmo do aparelho
+    this.janelaT += real
+    this.janelaN++
+    if (this.janelaN < 45) return
+    const med = (this.janelaT / this.janelaN) * 1000
+    this.janelaT = 0
+    this.janelaN = 0
+    if (med > 21 && this.dpr > 0.75) {
+      this.dpr = Math.max(0.75, this.dpr - 0.25)
+      this.renderer.setPixelRatio(this.dpr)
+      this.boas = 0
+    } else if (med < 13.5 && this.dpr < this.dprMax) {
+      if (++this.boas >= 4) {
+        this.dpr = Math.min(this.dprMax, this.dpr + 0.25)
+        this.renderer.setPixelRatio(this.dpr)
+        this.boas = 0
+      }
+    } else this.boas = 0
   }
 
   pausar() {
@@ -397,7 +487,7 @@ export class Pecas {
   destruir() {
     this.pausar()
     this.malha.geometry.dispose()
-    ;(this.malha.material as MeshPhysicalMaterial).dispose()
+    ;(this.malha.material as MeshStandardMaterial).dispose()
     this.cena.environment?.dispose()
     this.renderer.dispose()
   }
@@ -417,6 +507,7 @@ export class Pecas {
   private plano = new Vector3()
   private toque = new Vector3()
   private onda = new Quaternion()
+  private eixoX = new Vector3(1, 0, 0)
   private zero = new Vector2()
 
   private atualizar(dt: number) {
@@ -439,16 +530,33 @@ export class Pecas {
     const ef = suave(fr)
     const mix = (a: number, b: number) => a + (b - a) * ef
 
-    // Câmera, fundo, névoa e o núcleo da Maia.
+    // O clima do diário vale perto do capítulo do gráfico.
+    const wP = suave(lim(1 - Math.abs(this.s - capitulo('padroes')) * 1.6))
+    const kc = dt ? 1 - Math.exp(-dt * 4) : 1
+    this.climaCorSuave.lerp(this.climaCor, kc)
+    this.climaFundoSuave.lerp(this.climaFundo, kc)
+    this.climaSolSuave.lerp(this.climaSol, kc)
+    clima.intensidade += (this.intensidadeAlvo * wP - clima.intensidade) * kc
+
+    // Câmera, fundo, luz, névoa e o núcleo da Maia.
     this.fundo.set(ca.fundo).lerp(this.cB.set(cb.fundo), ef)
+    if (wP > 0) this.fundo.lerp(this.climaFundoSuave, wP)
     this.cena.background = this.fundo
-    const neb = this.cena.fog as Fog
-    neb.color.copy(this.fundo)
+    ;(this.cena.fog as Fog).color.copy(this.fundo)
+    this.sol.color.copy(SOL_PADRAO).lerp(this.climaSolSuave, wP)
+    this.sol.intensity += (2.1 + (this.climaForca - 2.1) * wP - this.sol.intensity) * kc
+    this.ceu.intensity += (0.9 + (this.climaCeu - 0.9) * wP - this.ceu.intensity) * kc
+
     this.ponteiroSuave.lerp(this.temPonteiro ? this.ponteiro : this.zero, Math.min(1, dt * 2.5))
     const px = this.ponteiroSuave.x
     const py = this.ponteiroSuave.y
     this.camPos.set(mix(ca.cam[0], cb.cam[0]) + px * 0.9, mix(ca.cam[1], cb.cam[1]) - py * 0.6, mix(ca.cam[2], cb.cam[2]))
     this.alvo.set(mix(ca.alvo[0], cb.alvo[0]), mix(ca.alvo[1], cb.alvo[1]), mix(ca.alvo[2], cb.alvo[2]))
+    // Intensa: a câmera também treme um pouco.
+    if (clima.intensidade > 0.01) {
+      this.camPos.x += Math.sin(t * 31) * 0.05 * clima.intensidade
+      this.camPos.y += Math.cos(t * 27) * 0.04 * clima.intensidade
+    }
     // Telas estreitas: a câmera recua para a formação caber na largura.
     const recuo = this.camera.aspect < 1 ? lim(1 / this.camera.aspect, 1, 2.2) * 0.62 + 0.38 : 1
     this.camPos.sub(this.alvo).multiplyScalar(recuo).add(this.alvo)
@@ -475,10 +583,12 @@ export class Pecas {
     const forca = mix(ca.nucleo, cb.nucleo)
     this.nucleo.grupo.visible = forca > 0.01
     if (this.nucleo.grupo.visible) {
-      ;(this.nucleo.esfera.material as ShaderMaterial).uniforms.uForca.value = forca
-      ;(this.nucleo.esfera.material as ShaderMaterial).uniforms.uTempo.value = t
-      ;(this.nucleo.halo.material as ShaderMaterial).uniforms.uForca.value = forca
-      ;(this.nucleo.halo.material as ShaderMaterial).uniforms.uTempo.value = t
+      const ue = (this.nucleo.esfera.material as ShaderMaterial).uniforms
+      const uh = (this.nucleo.halo.material as ShaderMaterial).uniforms
+      ue.uForca.value = forca
+      ue.uTempo.value = t
+      uh.uForca.value = forca
+      uh.uTempo.value = t
       this.nucleo.halo.quaternion.copy(this.camera.quaternion)
       this.nucleo.esfera.scale.setScalar(0.6 + forca * 0.4 + Math.sin(t * 1.8) * 0.03)
     }
@@ -489,10 +599,8 @@ export class Pecas {
       this.raio.setFromCamera(this.ponteiro, this.camera)
       const o = this.raio.ray.origin
       const d = this.raio.ray.direction
-      const z0 = this.grupo.position.z
       if (Math.abs(d.z) > 1e-3) {
-        const tt = (z0 - o.z) / d.z
-        this.toque.copy(o).addScaledVector(d, tt)
+        this.toque.copy(o).addScaledVector(d, (this.grupo.position.z - o.z) / d.z)
         this.grupo.worldToLocal(this.toque)
         tocando = true
       }
@@ -501,99 +609,99 @@ export class Pecas {
     const fa = this.formacoes[ca.formacao]
     const fb = this.formacoes[cb.formacao]
     const mesma = fa === fb
+    const viajando = !mesma && fr > 0
+    // Cor e humor só sobem para a GPU quando mudam: na viagem, perto do diário, ou logo depois de uma mudança.
+    const cores = viajando || wP > 0.001 || this.corSuja > 0
+    if (this.corSuja > 0) this.corSuja--
+    const fP = this.formacoes.padroes
     const agit = mix(ca.agitacao, cb.agitacao)
     const tranco = lim(this.vel, -2, 2)
     const m = this.malha
     const cor = m.instanceColor!
+    const amort = Math.min(1, dt * 6)
+    const ep = this.empurrao
     for (let k = 0; k < this.n; k++) {
       // A revoada: cada peça faz a viagem dela num trecho do intervalo.
-      const d0 = this.atraso[k]
-      const e = mesma ? 0 : suave(lim((fr - d0) / (1 - 0.38)))
+      const e = viajando ? suave(lim((fr - this.atraso[k]) / (1 - 0.38))) : 0
       this.pA.fromArray(fa.p, k * 3)
       this.qA.fromArray(fa.q, k * 4)
       fa.dinamica?.(k, t, this.pA, this.qA)
-      if (!mesma && e > 0) {
+      if (e > 0) {
         this.pB.fromArray(fb.p, k * 3)
         this.qB.fromArray(fb.q, k * 4)
         fb.dinamica?.(k, t, this.pB, this.qB)
         this.pA.lerp(this.pB, e)
         // Viagem em arco, não em linha reta.
-        this.pA.y += Math.sin(e * Math.PI) * this.elevacao[k]
-        this.pA.z += Math.sin(e * Math.PI) * 1.6
+        const arcoV = Math.sin(e * Math.PI)
+        this.pA.y += arcoV * this.elevacao[k]
+        this.pA.z += arcoV * 1.6
         this.qA.slerp(this.qB, e)
       }
       // Fora do caos, um balanço leve (a agitação do capítulo); ao rolar, tremem.
       if (agit > 0.02 && agit < 0.5) this.pA.y += Math.sin(t * 0.8 + k) * agit * 1.5
-      if (Math.abs(tranco) > 0.01) {
-        this.onda.setFromAxisAngle(this.esc.set(1, 0, 0), tranco * 0.35 * Math.sin(k * 1.3))
-        this.qA.multiply(this.onda)
-      }
+      if (tranco > 0.01 || tranco < -0.01) this.qA.multiply(this.onda.setFromAxisAngle(this.eixoX, tranco * 0.35 * Math.sin(k * 1.3)))
 
       // Empurrão do ponteiro, suavizado por peça.
       let ex = 0
       let ey = 0
       let ez = 0
-      if (tocando) {
+      if (tocando && this.pA.z > -4) {
         const dx = this.pA.x - this.toque.x
         const dy = this.pA.y - this.toque.y
-        const dist = Math.hypot(dx, dy)
-        const R = 2.6
-        if (dist < R && this.pA.z > -4) {
-          const f = (1 - dist / R) ** 2
-          ex = (dx / (dist || 1)) * f * 1.4
-          ey = (dy / (dist || 1)) * f * 1.4
+        const d2 = dx * dx + dy * dy
+        if (d2 < 6.76) {
+          const dist = Math.sqrt(d2) || 1
+          const f = (1 - dist / 2.6) ** 2
+          ex = (dx / dist) * f * 1.4
+          ey = (dy / dist) * f * 1.4
           ez = f * 1.8
         }
       }
-      const amort = Math.min(1, dt * 6)
-      const ep = this.empurrao
-      ep[k * 3] += (ex - ep[k * 3]) * amort
-      ep[k * 3 + 1] += (ey - ep[k * 3 + 1]) * amort
-      ep[k * 3 + 2] += (ez - ep[k * 3 + 2]) * amort
-      this.pA.x += ep[k * 3]
-      this.pA.y += ep[k * 3 + 1]
-      this.pA.z += ep[k * 3 + 2]
+      const k3 = k * 3
+      ep[k3] += (ex - ep[k3]) * amort
+      ep[k3 + 1] += (ey - ep[k3 + 1]) * amort
+      ep[k3 + 2] += (ez - ep[k3 + 2]) * amort
+      this.pA.x += ep[k3]
+      this.pA.y += ep[k3 + 1]
+      this.pA.z += ep[k3 + 2]
 
       const ea = fa.escala[k]
-      const eb = fb.escala[k]
-      const es = mesma ? ea : ea + (eb - ea) * e
-      this.esc.setScalar(es)
+      this.esc.setScalar(e > 0 ? ea + (fb.escala[k] - ea) * e : ea)
       this.mat.compose(this.pA, this.qA, this.esc)
       m.setMatrixAt(k, this.mat)
 
-      this.cA.fromArray(fa.cor, k * 3)
-      if (!mesma && e > 0) this.cA.lerp(this.cB.fromArray(fb.cor, k * 3), e)
-      cor.setXYZ(k, this.cA.r, this.cA.g, this.cA.b)
-      const ha = fa.humor[k]
-      this.aHumor.setX(k, mesma ? ha : ha + (fb.humor[k] - ha) * e)
-    }
-    m.instanceMatrix.needsUpdate = true
-    cor.needsUpdate = true
-    this.aHumor.needsUpdate = true
-
-    this.aoQuadro?.(this.lerRotulos(fa, fb, ef))
-  }
-
-  private lerRotulos(fa: Formacao, fb: Formacao, ef: number): Leitura {
-    const rotulos: Rotulo[] = []
-    const w = this.renderer.domElement.clientWidth
-    const h = this.renderer.domElement.clientHeight
-    const ver = (f: Formacao) => {
-      for (const [id, a] of Object.entries(f.ancoras)) {
-        if (rotulos.some((r) => r.id === id)) continue
-        this.plano.set(a[0], a[1], a[2])
-        this.grupo.localToWorld(this.plano)
-        this.plano.project(this.camera)
-        rotulos.push({
-          id,
-          x: (this.plano.x * 0.5 + 0.5) * w,
-          y: (-this.plano.y * 0.5 + 0.5) * h,
-          visivel: this.plano.z < 1,
-        })
+      if (cores) {
+        this.cA.fromArray(fa.cor, k3)
+        if (e > 0) this.cA.lerp(this.cB.fromArray(fb.cor, k3), e)
+        // Perto do diário, o confete do fundo toma a cor da emoção escolhida.
+        if (wP > 0.001 && k >= fP.livres && k !== this.kFantasma && !this.registros.has(k)) this.cA.lerp(this.climaCorSuave, wP * 0.8)
+        cor.setXYZ(k, this.cA.r, this.cA.g, this.cA.b)
+        const ha = fa.humor[k]
+        this.aHumor.setX(k, e > 0 ? ha + (fb.humor[k] - ha) * e : ha)
       }
     }
-    if (ef < 0.5) ver(fa)
-    else ver(fb)
-    return { rotulos }
+    m.instanceMatrix.needsUpdate = true
+    if (cores) {
+      cor.needsUpdate = true
+      this.aHumor.needsUpdate = true
+    }
+
+    if (this.aoQuadro) this.aoQuadro(this.lerRotulos(ef < 0.5 ? ca.formacao : cb.formacao))
+  }
+
+  private lerRotulos(id: IdFormacao): Leitura {
+    const rotulos = this.leitura.rotulos
+    rotulos.length = 0
+    const lista = this.ancoras[id]
+    if (!lista.length) return this.leitura
+    const w = this.renderer.domElement.clientWidth
+    const h = this.renderer.domElement.clientHeight
+    for (const { id: nome, a } of lista) {
+      this.plano.set(a[0], a[1], a[2])
+      this.grupo.localToWorld(this.plano)
+      this.plano.project(this.camera)
+      rotulos.push({ id: nome, x: (this.plano.x * 0.5 + 0.5) * w, y: (-this.plano.y * 0.5 + 0.5) * h, visivel: this.plano.z < 1 })
+    }
+    return this.leitura
   }
 }

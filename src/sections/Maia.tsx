@@ -88,7 +88,8 @@ export function Maia() {
             Conheça a Maia, <em className="texto-arco">sua aliada</em> para transformar o cuidado.
           </h2>
           <p className="legivel-escuro mt-5 leading-relaxed text-white/75" data-revela="2">
-            Mais do que tecnologia: suporte real para você, sua equipe e as famílias, todos os dias, em tempo real.
+            Mais do que tecnologia: suporte real para você, sua equipe e as famílias, todos os dias, em tempo real. Inteligência
+            artificial desenvolvida com o CEIA-UFG, o Centro de Excelência em IA da Universidade Federal de Goiás.
           </p>
           <div className="mt-8" data-revela="3">
             <Conversa />

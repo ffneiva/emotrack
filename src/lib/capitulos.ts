@@ -53,25 +53,37 @@ export function capitulo(id: IdCapitulo): number {
   return CAPITULOS.findIndex((c) => c.id === id)
 }
 
+/** As posições dos marcadores na página (coordenadas do documento). */
+export type Mapa = { marcas: { s: number; y: number }[]; opacos: { a: number; b: number }[] }
+
 /**
- * O capítulo contínuo a partir da rolagem: os marcadores `data-s` cujo centro
- * está acima e abaixo do meio da tela, interpolados.
+ * Mede uma vez onde ficam os marcadores `data-s` (o centro de cada um) e as
+ * seções opacas. A rolagem só faz contas com `scrollY` — ler a posição dos
+ * elementos a cada evento de rolagem força o navegador a recalcular o layout,
+ * e é isso que deixa a rolagem pesada no celular.
  */
-export function capituloDaRolagem(raiz: ParentNode, meio: number): number {
-  const pontos = [...raiz.querySelectorAll<HTMLElement>('[data-s]')]
+export function medirMapa(raiz: ParentNode): Mapa {
+  const y0 = window.scrollY
+  const marcas = [...raiz.querySelectorAll<HTMLElement>('[data-s]')]
     .map((m) => {
       const r = m.getBoundingClientRect()
-      return { s: Number(m.dataset.s), c: r.top + r.height / 2 }
+      return { s: Number(m.dataset.s), y: r.top + y0 + r.height / 2 }
     })
-    .sort((a, b) => a.c - b.c)
-  if (!pontos.length || meio <= pontos[0].c) return pontos[0]?.s ?? 0
-  for (let i = 0; i < pontos.length - 1; i++) {
-    const a = pontos[i]
-    const b = pontos[i + 1]
-    if (meio >= a.c && meio <= b.c) {
-      if (b.c - a.c < 1) return b.s
-      return a.s + ((meio - a.c) / (b.c - a.c)) * (b.s - a.s)
-    }
+    .sort((a, b) => a.y - b.y)
+  const opacos = [...raiz.querySelectorAll<HTMLElement>('[data-opaco]')].map((el) => {
+    const r = el.getBoundingClientRect()
+    return { a: r.top + y0, b: r.bottom + y0 }
+  })
+  return { marcas, opacos }
+}
+
+/** O capítulo contínuo na posição `y` do documento: os marcadores vizinhos, interpolados. */
+export function capituloEm({ marcas }: Mapa, y: number): number {
+  if (!marcas.length || y <= marcas[0].y) return marcas[0]?.s ?? 0
+  for (let i = 0; i < marcas.length - 1; i++) {
+    const a = marcas[i]
+    const b = marcas[i + 1]
+    if (y >= a.y && y <= b.y) return b.y - a.y < 1 ? b.s : a.s + ((y - a.y) / (b.y - a.y)) * (b.s - a.s)
   }
-  return pontos[pontos.length - 1].s
+  return marcas[marcas.length - 1].s
 }

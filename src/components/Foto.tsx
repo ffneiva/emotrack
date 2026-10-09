@@ -19,18 +19,21 @@ type Props = {
   mouse?: boolean
   /** PNG com transparência (as telas do app): sem o borrão de espera. */
   recorte?: boolean
+  /** Abre de dentro para fora com a rolagem (lib/cenas.ts). */
+  revela?: boolean
 }
 
 /**
  * Foto responsiva: AVIF com WebP de reserva, três larguras, e um borrão de
  * 24 px (embutido no HTML) enquanto a imagem não chega.
  */
-export function Foto({ slug, alt, sizes = '100vw', className, imgClassName, prioridade, style, velocidade, mouse, ja, recorte }: Props) {
+export function Foto({ slug, alt, sizes = '100vw', className, imgClassName, prioridade, style, velocidade, mouse, ja, recorte, revela }: Props) {
   const info = IMAGENS[slug]
   const srcset = (ext: string) => info.larguras.map((l) => `/img/${slug}-${l}.${ext} ${l}w`).join(', ')
   const maior = info.larguras[info.larguras.length - 1]
   return (
     <div
+      data-revela-foto={revela || undefined}
       className={cn(!className?.includes('absolute') && 'relative', 'overflow-hidden', className)}
       style={{ backgroundImage: info.lqip && !recorte ? `url(${info.lqip})` : undefined, backgroundSize: 'cover', backgroundPosition: 'center', ...style }}
     >

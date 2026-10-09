@@ -15,7 +15,7 @@ export function Motivo() {
         <div className="vidro-escuro max-w-md rounded-[2rem] p-7 sm:p-9" data-revela>
           <p className="rotulo text-ciano-claro">Sobre a Emotrack</p>
           <h2 className="titulo mt-5 text-3xl sm:text-[2.6rem]">
-            Cada registro é uma peça. <em className="text-rosa">Juntas</em>, elas mostram o que a criança está tentando dizer.
+            Cada registro é uma peça. <em className="text-rosa">Juntas,</em> elas mostram o que a criança está tentando dizer.
           </h2>
           <p className="mt-5 leading-relaxed text-white/75">
             A Emotrack organiza emoções e comportamentos com um método baseado em ciência, para você reconhecer padrões e chegar à

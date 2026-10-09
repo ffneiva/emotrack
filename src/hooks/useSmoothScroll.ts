@@ -25,8 +25,8 @@ export function useSmoothScroll() {
       if (cancelado) return
 
       const lenis = new LenisCtor({
-        duration: 1.15,
-        easing: (t) => Math.min(1, 1.001 - 2 ** (-10 * t)),
+        // Inércia curta: suave, mas sem a sensação de rolagem "pesada".
+        lerp: 0.16,
         smoothWheel: true,
         syncTouch: false,
       })

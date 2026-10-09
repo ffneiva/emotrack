@@ -34,7 +34,8 @@ export function Trajetoria() {
               Não é uma promessa: é um produto <em className="text-roxo">validado.</em>
             </h2>
             <p className="mt-6 max-w-md leading-relaxed text-cinza" data-revela="2">
-              Premiada e acelerada por instituições de referência no Brasil, a Emotrack nasceu da vivência de famílias atípicas.
+              Fundada por mulheres que vivem a causa de perto e acelerada por instituições de referência no Brasil, a Emotrack nasceu
+              da vivência de famílias atípicas.
             </p>
             <ol className="relative mt-10 space-y-8 border-l-2 border-dashed border-black/10 pl-7">
               {MARCOS.map(([ano, t, p], i) => (
@@ -56,6 +57,7 @@ export function Trajetoria() {
                 sizes="(min-width: 1024px) 320px, 45vw"
                 className={`aspect-square rounded-[1.6rem] ${i % 2 ? 'translate-y-10' : ''}`}
                 velocidade={i % 2 ? -0.05 : 0.04}
+                revela
               />
             ))}
           </div>

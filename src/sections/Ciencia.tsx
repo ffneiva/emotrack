@@ -7,7 +7,7 @@ const MOTIVOS = [
   { i: 'relogio', t: 'Intervenção precoce', d: 'Tempo é tudo no neurodesenvolvimento.', p: 'Quanto antes os padrões são identificados, mais cedo a intervenção começa. O registro estruturado acelera esse caminho.', cor: MARCA.rosa },
   { i: 'moeda', t: 'Acessível e econômico', d: 'Cuidado de qualidade não pode ser privilégio.', p: 'Versão gratuita para famílias e menos custo de acompanhamento, com as informações num lugar só.', cor: MARCA.amarelo },
   { i: 'ciencia', t: 'Ciência aplicada', d: 'Metodologia, não achismo.', p: 'Construída com base em ABA e TCC, com participação de psicólogos especialistas em neurodesenvolvimento.', cor: MARCA.verde },
-  { i: 'pulso', t: 'Histórico contínuo', d: 'A memória da jornada não se perde.', p: 'Emoções, crises, avanços e contexto registrados ao longo do tempo, prontos para qualquer profissional.', cor: MARCA.ciano },
+  { i: 'pulso', t: 'Histórico contínuo', d: 'A memória da jornada não se perde.', p: 'Uma linha do tempo da infância à vida adulta, que não se perde ao trocar de plano de saúde ou de profissional.', cor: MARCA.ciano },
   { i: 'rede', t: 'Rede de cuidado', d: 'Todos na mesma página.', p: 'Famílias, escolas e profissionais compartilham o mesmo histórico inteligente, com segurança de dados.', cor: MARCA.roxo },
   { i: 'ia', t: 'Inteligência artificial', d: 'Padrões que olhos humanos podem perder.', p: 'IA que analisa tendências e gera insights para decisões clínicas mais assertivas.', cor: MARCA.azul },
 ]
@@ -70,6 +70,7 @@ export function Ciencia() {
               key={m.t}
               className="cartao group relative overflow-hidden p-7 transition-[transform,box-shadow] duration-500 ease-[var(--ease-sh)] hover:-translate-y-1 hover:shadow-[0_30px_60px_-30px_rgb(20_24_31/0.3)]"
               data-revela={i % 3}
+              data-tilt
             >
               <span
                 aria-hidden

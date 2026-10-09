@@ -39,7 +39,7 @@ export function Preloader({ aoTerminar }: { aoTerminar: () => void }) {
     let t2 = 0
     const iv = window.setInterval(() => {
       const t = performance.now() - inicio
-      if (!saiu && ((pronta && t > 2000) || t > 4500)) {
+      if (!saiu && ((pronta && t > 1100) || t > 2800)) {
         saiu = true
         setSaindo(true)
         try {
@@ -87,7 +87,7 @@ export function Preloader({ aoTerminar }: { aoTerminar: () => void }) {
                     ? `translate(${x - 22}px, ${y - 22}px) rotate(${giro}deg)`
                     : `translate(${x - 22 + (i % 2 ? 140 : -140)}px, ${y - 22 + (i - 3) * 50}px) rotate(${giro + 220}deg)`,
                   opacity: montou ? 1 : 0,
-                  transitionDelay: `${i * 110}ms`,
+                  transitionDelay: `${i * 70}ms`,
                 }}
               >
                 <Peca cor={c} humor={1} className="size-full" />

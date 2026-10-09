@@ -45,9 +45,9 @@ pasta local que não fica no repositório).
 
 ## Publicação
 
-Um push na `main` publica no S3 (website hosting) pelo GitHub Actions, com
-OIDC. Nenhuma credencial fica no repositório: o ARN da role é um secret e o
-resto são variables do environment `production`.
+Um push na `main` publica no S3 (website hosting, com a Cloudflare na frente)
+pelo GitHub Actions, com OIDC. Nenhuma credencial fica no repositório: o ARN
+da role é um secret e o resto são variables do environment `production`.
 
 ---
 

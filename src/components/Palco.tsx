@@ -1,6 +1,6 @@
 import { type RefObject, useEffect, useRef, useState } from 'react'
 import { useIsDesktop } from '@/hooks/useMediaQuery'
-import { capitulo, capituloDaRolagem } from '@/lib/capitulos'
+import { capitulo, capituloEm, type Mapa, medirMapa } from '@/lib/capitulos'
 import { publicarCapitulo } from '@/lib/rolagem'
 import { cn } from '@/lib/utils'
 import { DIAS } from '@/lib/semana'
@@ -102,10 +102,13 @@ export function Palco({ raiz, abertura }: Props) {
         window.addEventListener('resize', medir)
 
         let cobertoAgora = false
+        let mapa: Mapa = { marcas: [], opacos: [] }
+        let pedido = 0
         const aoRolar = () => {
-          const r = raiz.current
-          if (!r) return
-          const s = capituloDaRolagem(r, window.innerHeight / 2)
+          pedido = 0
+          const y = window.scrollY
+          const h = window.innerHeight
+          const s = capituloEm(mapa, y + h / 2)
           cena.definirProgresso(s)
           publicarCapitulo(s)
           const g = grupos.current
@@ -113,14 +116,8 @@ export function Palco({ raiz, abertura }: Props) {
           g.padroes = janela(s, capitulo('padroes'), capitulo('padroes'))
           g.rede = janela(s, capitulo('rede'), capitulo('rede'))
           g.maia = janela(s, capitulo('maia'), capitulo('maia'))
-          let cobre = false
-          for (const el of r.querySelectorAll<HTMLElement>('[data-opaco]')) {
-            const b = el.getBoundingClientRect()
-            if (b.top <= 0 && b.bottom >= window.innerHeight) {
-              cobre = true
-              break
-            }
-          }
+          // Uma seção opaca cobre a tela inteira? Então não há o que desenhar.
+          const cobre = mapa.opacos.some((o) => o.a <= y + 1 && o.b >= y + h - 1)
           if (cobre !== cobertoAgora) {
             cobertoAgora = cobre
             setCoberto(cobre)
@@ -128,6 +125,23 @@ export function Palco({ raiz, abertura }: Props) {
             else if (!document.hidden) cena.iniciar()
           }
         }
+        const pedirRolagem = () => {
+          if (!pedido) pedido = requestAnimationFrame(aoRolar)
+        }
+        // Remede quando a página muda de altura (seções preguiçosas, fontes, imagens).
+        let medida = 0
+        const remedir = () => {
+          cancelAnimationFrame(medida)
+          medida = requestAnimationFrame(() => {
+            const r = raiz.current
+            if (!r) return
+            mapa = medirMapa(r)
+            aoRolar()
+          })
+        }
+        const ro = new ResizeObserver(remedir)
+        if (raiz.current) ro.observe(raiz.current)
+        window.addEventListener('resize', remedir)
         const aoMover = (e: PointerEvent) => {
           if (e.pointerType !== 'mouse') return
           cena.definirPonteiro((e.clientX / window.innerWidth) * 2 - 1, -((e.clientY / window.innerHeight) * 2 - 1))
@@ -183,22 +197,23 @@ export function Palco({ raiz, abertura }: Props) {
         cena.aoQuadro = (l: Leitura) => {
           const g = grupos.current
           // Os rótulos que não são da formação atual somem.
-          for (const [id, el] of Object.entries(rotulosRef.current)) {
-            if (el && !l.rotulos.some((r) => r.id === id)) el.style.opacity = '0'
-          }
-          for (const r of l.rotulos) {
-            const el = rotulosRef.current[r.id]
+          for (const def of ROTULOS) {
+            const el = rotulosRef.current[def.id]
             if (!el) continue
-            const def = ROTULOS.find((x) => x.id === r.id)
-            const op = def ? g[def.grupo] : 0
-            const vis = r.visivel && op > 0.01
-            el.style.opacity = vis ? String(op) : '0'
-            if (vis) el.style.transform = `translate3d(${r.x.toFixed(1)}px, ${r.y.toFixed(1)}px, 0)`
+            const r = l.rotulos.find((x) => x.id === def.id)
+            const op = r?.visivel ? g[def.grupo] : 0
+            // Só escreve no DOM o que mudou: um rótulo invisível não custa nada.
+            const opTxt = op > 0.01 ? op.toFixed(2) : '0'
+            if (el.dataset.op !== opTxt) {
+              el.dataset.op = opTxt
+              el.style.opacity = opTxt
+            }
+            if (r && op > 0.01) el.style.transform = `translate3d(${r.x.toFixed(1)}px, ${r.y.toFixed(1)}px, 0)`
           }
         }
 
-        aoRolar()
-        window.addEventListener('scroll', aoRolar, { passive: true })
+        remedir()
+        window.addEventListener('scroll', pedirRolagem, { passive: true })
         window.addEventListener('pointermove', aoMover, { passive: true })
         document.documentElement.addEventListener('pointerleave', aoSair)
         window.addEventListener('pointerdown', baixo)
@@ -225,7 +240,11 @@ export function Palco({ raiz, abertura }: Props) {
 
         limpar = () => {
           window.removeEventListener('resize', medir)
-          window.removeEventListener('scroll', aoRolar)
+          window.removeEventListener('scroll', pedirRolagem)
+          ro.disconnect()
+          window.removeEventListener('resize', remedir)
+          cancelAnimationFrame(pedido)
+          cancelAnimationFrame(medida)
           window.removeEventListener('pointermove', aoMover)
           document.documentElement.removeEventListener('pointerleave', aoSair)
           window.removeEventListener('pointerdown', baixo)
@@ -265,11 +284,14 @@ export function Palco({ raiz, abertura }: Props) {
           >
             <div className="-translate-x-1/2 pt-1 text-center">
               {r.grupo === 'padroes' ? (
-                <span className={cn('text-[0.72rem] font-semibold tracking-wide', r.texto === 'Agora' ? 'text-rosa' : 'text-tinta/55')}>
+                <span
+                  className={cn('text-[0.72rem] font-semibold tracking-wide transition-colors duration-700', r.texto === 'Agora' && 'text-rosa')}
+                  style={r.texto === 'Agora' ? undefined : { color: 'var(--cor-dia, rgb(20 24 31 / 0.55))' }}
+                >
                   {r.texto}
                 </span>
               ) : (
-                <div className={cn('rounded-full px-3.5 py-1.5 whitespace-nowrap', r.tom === 'claro' ? 'vidro-escuro' : 'vidro-claro')}>
+                <div className={cn('rounded-full px-3.5 py-1.5 whitespace-nowrap', r.tom === 'claro' ? 'bg-noite/85 ring-1 ring-white/15' : 'bg-white/92 shadow-[0_10px_30px_-14px_rgb(20_24_31/0.35)]')}>
                   <span className={cn('text-[0.8rem] font-semibold', r.tom === 'claro' ? 'text-white' : 'text-tinta')}>{r.texto}</span>
                   {r.sub && <span className={cn('ml-2 text-[0.7rem]', r.tom === 'claro' ? 'text-ciano-claro' : 'text-tinta/55')}>{r.sub}</span>}
                 </div>

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { comCena } from '@/components/Palco'
 import { Peca } from '@/components/Peca'
 import { capitulo } from '@/lib/capitulos'
@@ -34,6 +34,13 @@ export function Diario() {
   const [momento, setMomento] = useState(0)
   const [regs, setRegs] = useState<Reg[]>([])
 
+  // O formulário mexe na cena antes do "Registrar": a emoção pinta o confete e
+  // a peça fantasma, a intensidade faz tremer, o momento muda a luz do dia.
+  useEffect(() => {
+    comCena((c) => c.definirClima({ emocao, intensidade, momento }))
+    document.documentElement.style.setProperty('--cor-dia', momento === 2 ? 'rgb(255 255 255 / 0.7)' : 'rgb(20 24 31 / 0.55)')
+  }, [emocao, intensidade, momento])
+
   const registrar = () => {
     comCena((c) => c.registrar(emocao))
     setRegs((r) => [...r, { emocao, intensidade, momento }].slice(-9))
@@ -50,8 +57,8 @@ export function Diario() {
             Registre como foi o momento. <em className="text-roxo">Veja a peça cair no lugar.</em>
           </h2>
           <p className="mt-4 text-sm leading-relaxed text-cinza">
-            É assim no app: poucos toques e o registro entra no histórico. Ao lado, a semana de uma criança, e a coluna do seu
-            registro.
+            É assim no app: poucos toques e o registro entra no histórico. Mexa nas opções e veja o fundo mudar com você: a
+            emoção pinta as peças, a intensidade agita, o momento muda a luz.
           </p>
 
           <fieldset className="mt-6">

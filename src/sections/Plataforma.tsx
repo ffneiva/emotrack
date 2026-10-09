@@ -102,7 +102,9 @@ function Painel() {
             {KPIS.map(([r, v, d]) => (
               <div key={r} className="rounded-xl bg-white/[0.05] p-3">
                 <p className="text-[0.65rem] text-white/50">{r}</p>
-                <p className="num mt-1 text-2xl font-semibold">{v}</p>
+                <p className="num mt-1 text-2xl font-semibold" data-conta={v}>
+                  {v}
+                </p>
                 <p className="text-[0.62rem] text-[#7be0b0]">{d}</p>
               </div>
             ))}

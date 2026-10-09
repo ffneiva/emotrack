@@ -24,12 +24,13 @@ function estaticosPlugin(): Plugin {
 
 /**
  * CSP por <meta>, só no build (o servidor de dev injeta script inline).
- * O site é servido direto pelo endpoint de website do S3, sem proxy na
- * frente para mandar cabeçalhos. Sem `upgrade-insecure-requests`: esse
- * endpoint só fala HTTP.
+ * A zona da Cloudflare não tem Transform Rule livre para mandar cabeçalhos.
+ * A Cloudflare injeta o Web Analytics (beacon) — por isso cloudflareinsights.
+ * Sem `upgrade-insecure-requests`: tudo é do mesmo domínio (já vem em HTTPS
+ * pela Cloudflare), e a diretiva quebraria o endereço s3-website, só HTTP.
  */
 const CSP =
-  "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; frame-src 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+  "default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://cloudflareinsights.com; frame-src 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
 function cspPlugin(): Plugin {
   return {
     name: 'emotrack-csp',

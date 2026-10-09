@@ -2,6 +2,7 @@ import { useRef } from 'react'
 import { Foto } from '@/components/Foto'
 import { IconeFuncao, IconePlay } from '@/components/Icones'
 import { Peca } from '@/components/Peca'
+import { Faixa } from './Manifesto'
 import { EMOCOES } from '@/lib/cores'
 import { LINKS } from '@/lib/links'
 
@@ -13,10 +14,10 @@ const PASSOS = [
 ]
 
 const RECURSOS = [
-  { i: 'pulso', t: 'Registro diário', p: 'Emoções, comportamentos, comunicação e estratégias, guiados passo a passo.' },
+  { i: 'pulso', t: 'Registro diário', p: 'Emoções, comportamentos, comunicação e estratégias, guiados passo a passo, em poucos minutos.' },
   { i: 'coracao', t: 'Registro de crise', p: 'Anote o que aconteceu e o que acalmou, mesmo no meio do caos.' },
   { i: 'relatorio', t: 'Relatórios por período', p: 'Filtre por data e veja padrões em gráficos claros.' },
-  { i: 'pasta', t: 'Pasta da criança', p: 'Laudos, medicações, alergias e documentos centralizados e seguros.' },
+  { i: 'pasta', t: 'Pasta da criança', p: 'Laudos, exames, medicações e alergias no celular, no lugar da pasta de papel.' },
   { i: 'equipe', t: 'Vários filhos', p: 'Gerencie o perfil de cada criança da família em uma só conta.' },
   { i: 'escudo', t: 'Gratuito e privado', p: 'Sem custo para famílias, com seus dados protegidos.' },
 ]
@@ -70,8 +71,9 @@ function Celulares() {
 
 export function Familias() {
   return (
-    <section id="familias" data-opaco data-tema="claro" className="relative z-10 overflow-hidden bg-creme px-5 py-24 text-tinta sm:px-8 sm:py-32">
-      <div className="mx-auto grid max-w-6xl items-center gap-14 lg:grid-cols-2">
+    <section id="familias" data-opaco data-tema="claro" className="relative z-10 overflow-hidden bg-creme pb-24 text-tinta sm:pb-32">
+      <Faixa palavras={['registre', 'entenda', 'compartilhe', 'cuide']} sentido={-1} />
+      <div className="mx-auto mt-10 grid max-w-6xl items-center gap-14 px-5 sm:px-8 lg:grid-cols-2">
         <div>
           <p className="rotulo text-rosa" data-revela>
             Para famílias
@@ -95,7 +97,7 @@ export function Familias() {
         </div>
       </div>
 
-      <div className="mx-auto mt-24 max-w-6xl">
+      <div className="mx-auto mt-24 max-w-6xl px-5 sm:px-8">
         <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
           <h3 className="titulo max-w-xl text-3xl sm:text-4xl" data-revela>
             Quatro passos. Um histórico que <em>conta a história toda.</em>
@@ -106,7 +108,7 @@ export function Familias() {
         </div>
         <ol className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {PASSOS.map((p, i) => (
-            <li key={p.t} className="cartao group relative overflow-hidden p-6" data-revela={i}>
+            <li key={p.t} className="cartao group relative overflow-hidden p-6" data-revela={i} data-tilt>
               <span className="num absolute -top-3 -right-1 text-[5.5rem] leading-none font-bold text-black/[0.04] transition-colors duration-500 group-hover:text-rosa/10">
                 0{i + 1}
               </span>
@@ -125,9 +127,9 @@ export function Familias() {
         </ol>
       </div>
 
-      <div className="mx-auto mt-24 grid max-w-6xl items-center gap-12 lg:grid-cols-[0.9fr_1.1fr]">
+      <div className="mx-auto mt-24 grid max-w-6xl items-center gap-12 px-5 sm:px-8 lg:grid-cols-[0.9fr_1.1fr]">
         <div className="relative" data-revela>
-          <Foto slug="mae-filho" alt="Mãe e filho juntos, sorrindo" sizes="(min-width: 1024px) 480px, 100vw" className="aspect-[4/5] rounded-[2rem]" velocidade={0.06} />
+          <Foto slug="mae-filho" alt="Mãe e filho juntos, sorrindo" sizes="(min-width: 1024px) 480px, 100vw" className="aspect-[4/5] rounded-[2rem]" velocidade={0.06} revela />
           <div className="vidro-claro absolute -right-3 bottom-8 max-w-[220px] rounded-2xl p-4 sm:-right-8">
             <p className="text-[0.68rem] font-semibold tracking-wide text-roxo uppercase">Registro rápido</p>
             <p className="mt-1 text-sm font-semibold">Como ele está agora?</p>

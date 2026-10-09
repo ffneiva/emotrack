@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { IconePlay, IconeSeta } from '@/components/Icones'
 import { capitulo } from '@/lib/capitulos'
 import { LINKS } from '@/lib/links'
@@ -12,7 +13,51 @@ const AVISOS = [
   { rotulo: 'Estratégia', texto: 'Brincadeira sensorial acalma', cor: '#4FA9A6', lugar: 'right-[12%] bottom-[16%]', forca: '14px' },
 ]
 
+/**
+ * O título chega embaralhado — símbolos no lugar das letras — e cada palavra
+ * se resolve no próprio tempo: o caos virando frase.
+ */
+function useEmbaralhar(ref: React.RefObject<HTMLElement | null>, ligado: boolean) {
+  useEffect(() => {
+    const el = ref.current
+    if (!el || !ligado || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const SIMBOLOS = '▲●■◆✦?!#%&@*+'
+    const alvos = [...el.querySelectorAll<HTMLElement>('[data-palavra]')]
+    const finais = alvos.map((a) => a.textContent ?? '')
+    const inicio = performance.now()
+    let raf = 0
+    const quadro = (agora: number) => {
+      let falta = false
+      alvos.forEach((a, i) => {
+        const t = agora - inicio - i * 90
+        const resolvidas = Math.floor(Math.max(0, t) / 38)
+        const f = finais[i]
+        if (resolvidas >= f.length) {
+          if (a.textContent !== f) a.textContent = f
+          return
+        }
+        falta = true
+        let s = ''
+        for (let c = 0; c < f.length; c++) {
+          s += c < resolvidas || f[c] === ' ' || f[c] === ' ' ? f[c] : SIMBOLOS[(Math.random() * SIMBOLOS.length) | 0]
+        }
+        a.textContent = s
+      })
+      if (falta) raf = requestAnimationFrame(quadro)
+    }
+    raf = requestAnimationFrame(quadro)
+    return () => {
+      cancelAnimationFrame(raf)
+      alvos.forEach((a, i) => {
+        a.textContent = finais[i]
+      })
+    }
+  }, [ref, ligado])
+}
+
 export function Heroi({ pronto, aoIr }: { pronto: boolean; aoIr: (id: string) => void }) {
+  const titulo = useRef<HTMLHeadingElement>(null)
+  useEmbaralhar(titulo, pronto)
   return (
     <section
       id="inicio"
@@ -35,12 +80,13 @@ export function Heroi({ pronto, aoIr }: { pronto: boolean; aoIr: (id: string) =>
         <span className="arco-gradiente size-2 rounded-full" />
         Autismo, TDAH e outras neurodivergências
       </p>
-      <h1 className="titulo legivel-escuro relative max-w-5xl text-[2.7rem] sm:text-6xl lg:text-[5.6rem]">
+      <h1 ref={titulo} className="titulo legivel-escuro relative max-w-5xl text-[2.7rem] sm:text-6xl lg:text-[5.6rem]">
         {PALAVRAS.map((p, i) => (
           <span key={i} className="inline-block overflow-hidden pb-[0.12em] align-bottom">
             <span
               className="inline-block transition-transform duration-[1200ms] ease-[var(--ease-sh)]"
               style={{ transform: pronto ? 'none' : 'translateY(110%)', transitionDelay: `${120 + i * 70}ms` }}
+              data-palavra
             >
               {p}&nbsp;
             </span>
@@ -50,6 +96,7 @@ export function Heroi({ pronto, aoIr }: { pronto: boolean; aoIr: (id: string) =>
           <em
             className="texto-arco inline-block pr-[0.08em] transition-transform duration-[1200ms] ease-[var(--ease-sh)]"
             style={{ transform: pronto ? 'none' : 'translateY(110%)', transitionDelay: `${120 + PALAVRAS.length * 70}ms` }}
+            data-palavra
           >
             um motivo.
           </em>

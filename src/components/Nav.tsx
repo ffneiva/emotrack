@@ -16,22 +16,27 @@ export const SECOES = [
 function useTemaSobABarra() {
   const [escuro, setEscuro] = useState(true)
   useEffect(() => {
-    let raf = 0
-    const medir = () => {
-      raf = 0
-      const els = document.elementsFromPoint(window.innerWidth / 2, 36)
-      const sec = els.map((e) => e.closest<HTMLElement>('[data-tema]')).find(Boolean)
-      setEscuro((sec?.dataset.tema ?? 'escuro') === 'escuro')
+    // Uma linha fina na altura da barra: a seção que a cruza dá o tom.
+    let io: IntersectionObserver | undefined
+    const montar = () => {
+      io?.disconnect()
+      io = new IntersectionObserver(
+        (entradas) => {
+          for (const e of entradas) if (e.isIntersecting) setEscuro((e.target as HTMLElement).dataset.tema === 'escuro')
+        },
+        { rootMargin: `-36px 0px -${Math.max(0, window.innerHeight - 37)}px 0px` },
+      )
+      for (const el of document.querySelectorAll('[data-tema]')) io.observe(el)
     }
-    const aoRolar = () => {
-      if (!raf) raf = requestAnimationFrame(medir)
-    }
-    medir()
-    window.addEventListener('scroll', aoRolar, { passive: true })
-    window.addEventListener('resize', aoRolar)
+    montar()
+    // As seções preguiçosas chegam depois (o Suspense troca um filho direto do <main>).
+    const mo = new MutationObserver(montar)
+    mo.observe(document.getElementById('conteudo') ?? document.body, { childList: true })
+    window.addEventListener('resize', montar)
     return () => {
-      window.removeEventListener('scroll', aoRolar)
-      window.removeEventListener('resize', aoRolar)
+      io?.disconnect()
+      mo.disconnect()
+      window.removeEventListener('resize', montar)
     }
   }, [])
   return escuro
@@ -82,7 +87,8 @@ export function Nav({ aoIr }: { aoIr: (id: string) => void }) {
         <div
           className={cn(
             'mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 rounded-full pr-2 pl-5 transition-colors duration-500 sm:h-16 sm:pl-6',
-            escuro || menu ? 'vidro-escuro text-white' : 'vidro-claro text-tinta',
+            'vidro-nav',
+            escuro || menu ? 'bg-noite/70 text-white ring-1 ring-white/10' : 'bg-white/75 text-tinta shadow-[0_10px_40px_-20px_rgb(20_24_31/0.35)]',
           )}
         >
           <a

@@ -39,7 +39,7 @@ export function Ponte() {
       <div data-s={capitulo('ponte')} className="h-[88svh]" />
       <div className="mx-auto grid max-w-6xl gap-5 md:grid-cols-2 lg:gap-[22%]">
         {LADOS.map((l, i) => (
-          <article key={l.tag} className="vidro-claro rounded-[2rem] p-7 sm:p-8" data-revela={i}>
+          <article key={l.tag} className="vidro-claro relative rounded-[2rem] p-7 sm:p-8" data-revela={i} data-tilt>
             <p className={`rotulo ${l.cor}`}>{l.tag}</p>
             <p className="mt-4 leading-relaxed text-cinza">{l.p}</p>
             <ul className="mt-6 space-y-3">
