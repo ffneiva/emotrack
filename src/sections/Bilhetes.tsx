@@ -82,7 +82,7 @@ export function Bilhetes() {
   })
 
   return (
-    <section ref={ref} data-tema="escuro" data-fase="clareza" className="group/b relative z-10 h-[320svh] text-white">
+    <section ref={ref} data-tema="escuro" data-fase="clareza" className="group/b relative z-10 h-[230svh] text-white">
       <div className="sticky top-0 flex h-svh items-center overflow-hidden px-5 sm:px-8">
         <div className="mx-auto grid w-full max-w-6xl items-center gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:gap-14">
           <div className="relative">
@@ -135,7 +135,7 @@ export function Bilhetes() {
                 {LINHAS.map((l, i) => {
                   const emo = EMOCOES[l.emocao]
                   return (
-                    <li key={i} data-linha className="relative h-11 will-change-transform sm:h-12">
+                    <li key={i} data-linha className="relative h-11 sm:h-12">
                       {/* O bilhete de papel (o caos). */}
                       <div
                         data-bilhete

@@ -27,8 +27,8 @@ export function Fecho() {
   }
 
   return (
-    <section id="contato" data-3d data-tema="claro" className="relative z-10 px-5 pt-[78svh] pb-24 text-tinta sm:px-8 sm:pt-[86svh]">
-      <div data-s={capitulo('fecho')} className="pointer-events-none absolute inset-x-0 top-[48svh] h-px" />
+    <section id="contato" data-3d data-tema="claro" className="relative z-10 px-5 pt-[62svh] pb-24 text-tinta sm:px-8 sm:pt-[70svh]">
+      <div data-s={capitulo('fecho')} className="pointer-events-none absolute inset-x-0 top-[36svh] h-px" />
       <div className="mx-auto max-w-3xl text-center">
         <h2 className="titulo legivel-claro text-5xl sm:text-7xl" data-revela>
           Comece agora, <em className="texto-arco">gratuitamente.</em>

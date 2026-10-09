@@ -48,9 +48,9 @@ export function Diario() {
   const achado = padrao(regs)
 
   return (
-    <section data-3d data-tema="claro" className="relative z-10 min-h-[150svh] px-5 text-tinta sm:px-8">
+    <section data-3d data-tema="claro" className="relative z-10 min-h-[115svh] px-5 text-tinta sm:px-8">
       <div data-s={capitulo('padroes')} className="pointer-events-none absolute inset-x-0 top-[45%] h-px" />
-      <div className="mx-auto flex min-h-[150svh] max-w-6xl items-end pb-[10svh] lg:items-center lg:pb-0">
+      <div className="mx-auto flex min-h-[115svh] max-w-6xl items-end pb-[10svh] lg:items-center lg:pb-0">
         <div className="vidro-claro w-full max-w-md rounded-[2rem] p-6 sm:p-8" data-painel data-revela>
           <p className="rotulo text-roxo">Experimente agora</p>
           <h2 className="titulo mt-4 text-[1.9rem] sm:text-4xl">

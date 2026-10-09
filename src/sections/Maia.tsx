@@ -77,9 +77,9 @@ function Conversa() {
 /** O anel de peças girando em volta do núcleo de luz: a Maia. */
 export function Maia() {
   return (
-    <section id="maia" data-3d data-tema="escuro" className="relative z-10 min-h-[170svh] px-5 text-white sm:px-8">
+    <section id="maia" data-3d data-tema="escuro" className="relative z-10 min-h-[130svh] px-5 text-white sm:px-8">
       <div data-s={capitulo('maia')} className="pointer-events-none absolute inset-x-0 top-[42%] h-px" />
-      <div className="mx-auto flex min-h-[170svh] max-w-6xl items-end pb-[10svh] lg:items-center lg:pb-0">
+      <div className="mx-auto flex min-h-[130svh] max-w-6xl items-end pb-[10svh] lg:items-center lg:pb-0">
         <div className="w-full max-w-md max-lg:rounded-[2rem] max-lg:bg-noite/75 max-lg:p-6 max-lg:backdrop-blur-xl">
           <p className="rotulo text-ciano-claro" data-revela>
             Inteligência artificial

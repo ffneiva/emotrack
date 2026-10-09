@@ -31,8 +31,10 @@ export function useRevela() {
       }
     }
     varrer()
+    // Só os filhos diretos do <main>: é ali que o Suspense troca o fallback
+    // pelas seções. Vigiar a página inteira disparava a cada texto que muda.
     const mo = new MutationObserver(varrer)
-    mo.observe(document.body, { childList: true, subtree: true })
+    mo.observe(document.getElementById('conteudo') ?? document.body, { childList: true })
     return () => {
       io.disconnect()
       mo.disconnect()

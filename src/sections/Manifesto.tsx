@@ -6,7 +6,7 @@ export function Faixa({ palavras, sentido = 1, tom = 'claro' }: { palavras: stri
   const linha = [...palavras, ...palavras, ...palavras]
   return (
     <div aria-hidden className="relative overflow-hidden py-6 sm:py-10">
-      <div data-faixa={sentido} className="flex w-max items-center gap-6 whitespace-nowrap will-change-transform sm:gap-10">
+      <div data-faixa={sentido} className="flex w-max items-center gap-6 whitespace-nowrap sm:gap-10">
         {linha.map((p, i) => (
           <span key={i} className="flex items-center gap-6 sm:gap-10">
             <span

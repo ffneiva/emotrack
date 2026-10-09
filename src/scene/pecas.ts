@@ -14,7 +14,6 @@ import {
   NeutralToneMapping,
   PerspectiveCamera,
   PlaneGeometry,
-  PMREMGenerator,
   Quaternion,
   Raycaster,
   Scene,
@@ -27,7 +26,6 @@ import {
   WebGLRenderer,
   type WebGLProgramParametersWithUniforms,
 } from 'three'
-import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
 import { CAPITULOS, type Capitulo, capitulo, type IdFormacao } from '@/lib/capitulos'
 import { EMOCOES } from '@/lib/cores'
 import { MAX_REGISTROS } from '@/lib/semana'
@@ -292,9 +290,9 @@ export class Pecas {
   constructor(canvas: HTMLCanvasElement, { compacto, calmo }: Opcoes) {
     this.compacto = compacto
     this.calmo = calmo
-    this.n = compacto ? 160 : 240
+    this.n = compacto ? 140 : 200
     this.kFantasma = fantasma(this.n)
-    this.dprMax = Math.min(window.devicePixelRatio || 1, 1.5)
+    this.dprMax = Math.min(window.devicePixelRatio || 1, compacto ? 1.25 : 1.5)
     this.dpr = this.dprMax
     // MSAA só em tela comum; em tela densa a própria resolução já suaviza.
     this.renderer = new WebGLRenderer({
@@ -309,22 +307,19 @@ export class Pecas {
     this.renderer.toneMapping = NeutralToneMapping
     this.renderer.toneMappingExposure = 1
 
-    const pmrem = new PMREMGenerator(this.renderer)
-    this.cena.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture
-    pmrem.dispose()
-    this.cena.environmentIntensity = 0.55
-
-    this.ceu = new HemisphereLight('#ffffff', '#5b4a8a', 0.9)
+    // Sem mapa de ambiente: gerá-lo (PMREM) travava a abertura no celular.
+    // Céu + sol + contraluz dão o volume de "brinquedo de plástico".
+    this.ceu = new HemisphereLight('#ffffff', '#6a5a9a', 1.5)
     this.cena.add(this.ceu)
-    this.sol = new DirectionalLight('#fff4e6', 2.1)
+    this.sol = new DirectionalLight('#fff4e6', 2.6)
     this.sol.position.set(6, 10, 12)
     this.cena.add(this.sol)
-    const recorte = new DirectionalLight('#9fd8ff', 1.1)
+    const recorte = new DirectionalLight('#9fd8ff', 1.4)
     recorte.position.set(-10, -4, -6)
     this.cena.add(recorte)
     this.cena.fog = new Fog('#100d2e', 22, 60)
 
-    const mat = new MeshStandardMaterial({ roughness: 0.42, metalness: 0 })
+    const mat = new MeshStandardMaterial({ roughness: 0.5, metalness: 0 })
     comRosto(mat, this.uTempo)
     const geo = geometriaDaPeca(compacto)
     this.aHumor = new InstancedBufferAttribute(new Float32Array(this.n), 1)
@@ -364,7 +359,12 @@ export class Pecas {
     await this.renderer.compileAsync(this.cena, this.camera)
   }
 
+  private largura = 1
+  private altura = 1
+
   redimensionar(w: number, h: number) {
+    this.largura = w
+    this.altura = h
     this.renderer.setSize(w, h, false)
     this.camera.aspect = w / h
     this.camera.updateProjectionMatrix()
@@ -488,7 +488,6 @@ export class Pecas {
     this.pausar()
     this.malha.geometry.dispose()
     ;(this.malha.material as MeshStandardMaterial).dispose()
-    this.cena.environment?.dispose()
     this.renderer.dispose()
   }
 
@@ -518,7 +517,7 @@ export class Pecas {
 
     // A rolagem chega suavizada; a velocidade dela vira um "tranco" nas peças.
     const antes = this.s
-    this.s += (this.sAlvo - this.s) * (dt ? 1 - Math.exp(-dt * 6) : 1)
+    this.s += (this.sAlvo - this.s) * (dt ? 1 - Math.exp(-dt * 9) : 1)
     if (Math.abs(this.sAlvo - this.s) < 1e-4) this.s = this.sAlvo
     const dv = dt ? (this.s - antes) / dt : 0
     this.vel += (dv - this.vel) * Math.min(1, dt * 5)
@@ -544,8 +543,8 @@ export class Pecas {
     this.cena.background = this.fundo
     ;(this.cena.fog as Fog).color.copy(this.fundo)
     this.sol.color.copy(SOL_PADRAO).lerp(this.climaSolSuave, wP)
-    this.sol.intensity += (2.1 + (this.climaForca - 2.1) * wP - this.sol.intensity) * kc
-    this.ceu.intensity += (0.9 + (this.climaCeu - 0.9) * wP - this.ceu.intensity) * kc
+    this.sol.intensity += (2.6 + (this.climaForca + 0.5 - 2.6) * wP - this.sol.intensity) * kc
+    this.ceu.intensity += (1.5 + (this.climaCeu * 1.6 - 1.5) * wP - this.ceu.intensity) * kc
 
     this.ponteiroSuave.lerp(this.temPonteiro ? this.ponteiro : this.zero, Math.min(1, dt * 2.5))
     const px = this.ponteiroSuave.x
@@ -687,6 +686,7 @@ export class Pecas {
     }
 
     if (this.aoQuadro) this.aoQuadro(this.lerRotulos(ef < 0.5 ? ca.formacao : cb.formacao))
+
   }
 
   private lerRotulos(id: IdFormacao): Leitura {
@@ -694,8 +694,9 @@ export class Pecas {
     rotulos.length = 0
     const lista = this.ancoras[id]
     if (!lista.length) return this.leitura
-    const w = this.renderer.domElement.clientWidth
-    const h = this.renderer.domElement.clientHeight
+    // Tamanho guardado no redimensionar: ler clientWidth a cada quadro força layout.
+    const w = this.largura
+    const h = this.altura
     for (const { id: nome, a } of lista) {
       this.plano.set(a[0], a[1], a[2])
       this.grupo.localToWorld(this.plano)

@@ -9,9 +9,9 @@ const PILARES = [
 /** As peças se encaixam num quebra-cabeça, e o coração aparece no meio dele. */
 export function Motivo() {
   return (
-    <section data-3d data-tema="escuro" className="relative z-10 min-h-[150svh] px-5 text-white sm:px-8">
+    <section data-3d data-tema="escuro" className="relative z-10 min-h-[115svh] px-5 text-white sm:px-8">
       <div data-s={capitulo('motivo')} className="pointer-events-none absolute inset-x-0 top-[38%] h-px" />
-      <div className="mx-auto flex min-h-[150svh] max-w-6xl items-end pb-[12svh] lg:items-center lg:pb-0">
+      <div className="mx-auto flex min-h-[115svh] max-w-6xl items-end pb-[12svh] lg:items-center lg:pb-0">
         <div className="vidro-escuro max-w-md rounded-[2rem] p-7 sm:p-9" data-revela>
           <p className="rotulo text-ciano-claro">Sobre a Emotrack</p>
           <h2 className="titulo mt-5 text-3xl sm:text-[2.6rem]">

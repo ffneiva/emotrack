@@ -36,19 +36,6 @@ export function comCena(fn: (c: Pecas) => void) {
   else esperando.add(fn)
 }
 
-let pronta = false
-const avisos = new Set<() => void>()
-export function aoCenaPronta(fn: () => void): () => void {
-  if (pronta) fn()
-  else avisos.add(fn)
-  return () => avisos.delete(fn)
-}
-function marcarPronta() {
-  pronta = true
-  for (const f of avisos) f()
-  avisos.clear()
-}
-
 type Grupo = 'ponte' | 'padroes' | 'rede' | 'maia'
 const ROTULOS: { id: string; texto: string; sub?: string; grupo: Grupo; tom?: 'claro' }[] = [
   { id: 'casa', texto: 'Casa', sub: 'a família registra', grupo: 'ponte' },
@@ -67,14 +54,14 @@ function janela(s: number, de: number, ate: number, borda = 0.45) {
   return Math.min(entra, sai)
 }
 
-type Props = { raiz: RefObject<HTMLElement | null>; abertura: boolean }
+type Props = { raiz: RefObject<HTMLElement | null> }
 
 /**
  * O palco: um canvas fixo atrás da página inteira, com as peças voando de
  * capítulo em capítulo. Quando uma seção opaca cobre a tela inteira, o laço
  * de render para: nada é desenhado por baixo dela.
  */
-export function Palco({ raiz, abertura }: Props) {
+export function Palco({ raiz }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const rotulosRef = useRef<Record<string, HTMLDivElement | null>>({})
   const grupos = useRef<Record<Grupo, number>>({ ponte: 0, padroes: 0, rede: 0, maia: 0 })
@@ -232,11 +219,10 @@ export function Palco({ raiz, abertura }: Props) {
               requestAnimationFrame(() => {
                 if (cancelado) return
                 setPintou(true)
-                marcarPronta()
               }),
             )
           })
-          .catch(() => marcarPronta())
+          .catch(() => setPintou(true))
 
         limpar = () => {
           window.removeEventListener('resize', medir)
@@ -256,7 +242,7 @@ export function Palco({ raiz, abertura }: Props) {
           if (cenaAtual === cena) cenaAtual = null
         }
       })
-      .catch(() => marcarPronta())
+      .catch(() => {})
 
     return () => {
       cancelado = true
@@ -269,8 +255,8 @@ export function Palco({ raiz, abertura }: Props) {
       <canvas
         ref={canvasRef}
         className={cn(
-          'h-full w-full transition-opacity duration-[1400ms] ease-[var(--ease-sh)]',
-          pintou || !abertura ? 'opacity-100' : 'opacity-0',
+          'h-full w-full transition-opacity duration-700 ease-out',
+          pintou ? 'opacity-100' : 'opacity-0',
         )}
       />
       <div className="absolute inset-0">
@@ -280,7 +266,7 @@ export function Palco({ raiz, abertura }: Props) {
             ref={(el) => {
               rotulosRef.current[r.id] = el
             }}
-            className="absolute top-0 left-0 opacity-0 will-change-transform"
+            className="absolute top-0 left-0 opacity-0"
           >
             <div className="-translate-x-1/2 pt-1 text-center">
               {r.grupo === 'padroes' ? (

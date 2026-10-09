@@ -12,7 +12,8 @@ import type { Motor } from './movimento'
  *   [data-acende]        um parágrafo cujas palavras acendem uma a uma;
  *   [data-conta]         um número que conta até o valor quando aparece.
  *
- * Tudo com `scrub`: a animação é a rolagem, não um relógio. Antes de o motor
+ * Quase tudo com `scrub` (a animação é a rolagem); os títulos tocam uma vez
+ * ao entrar, porque são muitas palavras. Antes de o motor
  * chegar — e para sempre, se ele falhar —, tudo já está no lugar final.
  */
 
@@ -77,17 +78,24 @@ export function armarCenas({ gsap }: Motor, escopo: HTMLElement, compacto: boole
         y: (i: number) => (semente(i + 7) - 0.5) * 90 * forca,
         rotate: (i: number) => (semente(i + 3) - 0.5) * 50,
         opacity: 0.12,
-        filter: compacto ? 'none' : 'blur(7px)',
+        // 2D: com translate3d, cada palavra (centenas na página) vira uma
+        // camada de composição — e montar camadas era o maior custo da rolagem.
+        force3D: false,
       },
       {
         x: 0,
         y: 0,
         rotate: 0,
         opacity: 1,
-        filter: compacto ? 'none' : 'blur(0px)',
-        ease: 'power2.out',
-        stagger: { each: 0.025, from: 'random' },
-        scrollTrigger: { trigger: h, start: 'top 95%', end: 'top 52%', scrub: 0.6 },
+        // Toca uma vez ao entrar (não acompanha a rolagem quadro a quadro):
+        // centenas de palavras recalculadas a cada evento de rolagem pesavam
+        // no celular.
+        duration: 1.3,
+        ease: 'expo.out',
+        force3D: false,
+        clearProps: 'transform',
+        stagger: { each: 0.035, from: 'random' },
+        scrollTrigger: { trigger: h, start: 'top 85%', toggleActions: 'play none none none' },
       },
     )
   }

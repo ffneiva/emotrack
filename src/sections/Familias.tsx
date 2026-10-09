@@ -61,7 +61,7 @@ function Celulares() {
               animationDelay: `${i * -1.5}s`,
             }}
           >
-            <Peca cor={e.cor} humor={e.humor} className="size-full drop-shadow-[0_14px_18px_rgb(0_0_0/0.18)]" />
+            <Peca cor={e.cor} humor={e.humor} className="size-full" />
           </div>
         ))}
       </div>

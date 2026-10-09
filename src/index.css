@@ -204,26 +204,41 @@
   animation: desce 2.4s var(--ease-sh) infinite;
 }
 
+/* Propriedades individuais (translate/rotate): somam com o transform do
+   elemento e a placa de vídeo anima sozinha, sem repintar. */
 @keyframes flutua {
   50% {
-    transform: translateY(-10px) rotate(1.2deg);
+    translate: 0 -10px;
+    rotate: 1.2deg;
   }
 }
 .anima-flutua {
   animation: flutua 6s ease-in-out infinite;
 }
 
+/* O pulso do botão: um anel que cresce e some (transform + opacity, sem
+   animar box-shadow, que repinta a cada quadro). */
 @keyframes pulsa {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 rgb(230 49 91 / 0.45);
+  0% {
+    transform: scale(1);
+    opacity: 0.55;
   }
-  50% {
-    box-shadow: 0 0 0 12px rgb(230 49 91 / 0);
+  100% {
+    transform: scale(1.08, 1.45);
+    opacity: 0;
   }
 }
 .anima-pulsa {
-  animation: pulsa 2.2s ease-in-out infinite;
+  position: relative;
+}
+.anima-pulsa::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 2px solid rgb(230 49 91 / 0.7);
+  pointer-events: none;
+  animation: pulsa 2.2s ease-out infinite;
 }
 
 @keyframes letreiro {
@@ -320,7 +335,6 @@ details[open] .mais {
 [data-tilt] {
   transition: transform 0.6s var(--ease-sh);
   transform-style: preserve-3d;
-  will-change: transform;
 }
 [data-tilt]::after {
   content: '';
@@ -396,5 +410,4 @@ details[open] .mais {
 /* As palavras dos títulos (lib/cenas.ts): blocos para poderem se mexer sozinhas. */
 .palavra {
   display: inline-block;
-  will-change: transform, opacity;
 }

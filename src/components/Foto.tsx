@@ -51,7 +51,7 @@ export function Foto({ slug, alt, sizes = '100vw', className, imgClassName, prio
           fetchPriority={prioridade ? 'high' : undefined}
           data-velocidade={velocidade}
           data-mouse={mouse || undefined}
-          className={cn(recorte ? 'h-auto w-full' : 'h-full w-full object-cover', velocidade ? 'scale-[1.18] will-change-transform' : undefined, imgClassName)}
+          className={cn(recorte ? 'h-auto w-full' : 'h-full w-full object-cover', velocidade ? 'scale-[1.18]' : undefined, imgClassName)}
         />
       </picture>
     </div>

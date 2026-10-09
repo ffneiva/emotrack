@@ -1,10 +1,9 @@
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { Medidor } from '@/components/Medidor'
 import { Nav } from '@/components/Nav'
 import { Palco, PalcoReserva, usePode3D } from '@/components/Palco'
-import { devePreCarregar, Preloader } from '@/components/Preloader'
 import { BotaoFlutuante, Rodape } from '@/components/Rodape'
-import { scrollToSection, useSmoothScroll } from '@/hooks/useSmoothScroll'
+import { scrollToSection } from '@/lib/rolarPara'
 import { useEfeitos } from '@/hooks/useEfeitos'
 import { useRevela } from '@/hooks/useRevela'
 import { Heroi } from '@/sections/Heroi'
@@ -22,18 +21,21 @@ carregarResto()
 export default function App() {
   const raiz = useRef<HTMLDivElement>(null)
   const pode3D = usePode3D()
-  useSmoothScroll()
   useMouseNaRaiz()
   useRevela()
   useEfeitos()
 
-  const [abertura] = useState(() => devePreCarregar())
-  const [pronto, setPronto] = useState(!abertura)
-  const aoTerminar = useCallback(() => setPronto(true), [])
+  // Sem cortina de abertura: o texto aparece na hora e as peças entram quando
+  // a cena fica pronta. O "pronto" só espera o primeiro quadro, para a
+  // entrada do título ser vista.
+  const [pronto, setPronto] = useState(false)
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setPronto(true))
+    return () => cancelAnimationFrame(id)
+  }, [])
 
   return (
     <>
-      {abertura && <Preloader aoTerminar={aoTerminar} />}
       <a
         href="#conteudo"
         className="sr-only rounded-full bg-white px-5 py-2 text-xs text-tinta focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[300]"
@@ -42,7 +44,7 @@ export default function App() {
       </a>
       <Nav aoIr={scrollToSection} />
       <main id="conteudo" ref={raiz} className="relative">
-        {pode3D ? <Palco raiz={raiz} abertura={abertura} /> : <PalcoReserva />}
+        {pode3D ? <Palco raiz={raiz} /> : <PalcoReserva />}
         <Heroi pronto={pronto} aoIr={scrollToSection} />
         <Suspense fallback={<div className="min-h-[400vh]" />}>
           <Resto />

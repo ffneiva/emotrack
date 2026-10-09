@@ -182,7 +182,7 @@ function encaixe({ n, compacto }: Opcoes): Formacao {
     const x = (c - (cols - 1) / 2) * passo
     const y = (l - (lins - 1) / 2) * passo
     // O coração: (x² + y² − 1)³ − x²y³ ≤ 0, na escala da grade.
-    const s = compacto ? 4 : 4.9
+    const s = compacto ? 4 : 4.1
     const hx = x / s
     const hy = y / s - (compacto ? 0.05 : 0.12)
     const dentro = (hx * hx + hy * hy - 1) ** 3 - hx * hx * hy ** 3 <= 0

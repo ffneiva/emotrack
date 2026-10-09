@@ -36,7 +36,7 @@ export function Ponte() {
           O que a família registra se transforma em dados clínicos para o profissional.
         </p>
       </div>
-      <div data-s={capitulo('ponte')} className="h-[88svh]" />
+      <div data-s={capitulo('ponte')} className="h-[66svh]" />
       <div className="mx-auto grid max-w-6xl gap-5 md:grid-cols-2 lg:gap-[22%]">
         {LADOS.map((l, i) => (
           <article key={l.tag} className="vidro-claro relative rounded-[2rem] p-7 sm:p-8" data-revela={i} data-tilt>

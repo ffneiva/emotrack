@@ -40,7 +40,7 @@ const C = (c: Partial<Capitulo> & Pick<Capitulo, 'id' | 'formacao' | 'cam' | 'al
 export const CAPITULOS = [
   C({ id: 'heroi', formacao: 'caos', cam: [0, 0, 17], alvo: [0, 0, 0], fundo: '#100d2e', agitacao: 1, fov: 46 }),
   C({ id: 'motivo', formacao: 'encaixe', cam: [-2.5, -3, 19], alvo: [0, 0, 0], fundo: '#17143f', agitacao: 0.08, lado: [5, 0], ladoCompacto: [0, 2.2] }),
-  C({ id: 'ponte', formacao: 'ponte', cam: [0, 2.2, 19], alvo: [0, 2.2, 0], fundo: '#f6f1ea', lado: [0, -0.6], ladoCompacto: [0, 2.6] }),
+  C({ id: 'ponte', formacao: 'ponte', cam: [0, 2.2, 19], alvo: [0, 2.2, 0], fundo: '#f6f1ea', lado: [0, -1.3], ladoCompacto: [0, 2.6] }),
   C({ id: 'padroes', formacao: 'padroes', cam: [-3.5, 5, 15], alvo: [0, 3, 0], fundo: '#f2eefa', lado: [5, -0.4], ladoCompacto: [0, 3] }),
   C({ id: 'rede', formacao: 'rede', cam: [0, 0.6, 17], alvo: [0, 0.4, 0], fundo: '#ecf5f2', agitacao: 0.05, lado: [0, -0.8], ladoCompacto: [0, 1.4] }),
   C({ id: 'maia', formacao: 'maia', cam: [0, 2.4, 14], alvo: [0, 0, 0], fundo: '#0b0d29', agitacao: 0.05, lado: [4.4, 0], ladoCompacto: [0, 2.4], nucleo: 1 }),

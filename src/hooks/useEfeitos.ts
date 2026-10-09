@@ -40,7 +40,7 @@ export function useEfeitos() {
     }
     varrer()
     const mo = new MutationObserver(varrer)
-    mo.observe(document.body, { childList: true, subtree: true })
+    mo.observe(document.getElementById('conteudo') ?? document.body, { childList: true })
 
     /* ── cursor ── */
     const cursor = document.createElement('div')
