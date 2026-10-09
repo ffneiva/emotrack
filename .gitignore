@@ -1,0 +1,8 @@
+node_modules
+dist
+_midia
+_fotos
+test-results
+*.log
+_teste*.mjs
+.env*
