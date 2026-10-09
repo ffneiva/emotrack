@@ -33,7 +33,9 @@ function useTemaSobABarra() {
     const mo = new MutationObserver(montar)
     mo.observe(document.getElementById('conteudo') ?? document.body, { childList: true })
     window.addEventListener('resize', montar)
+    window.addEventListener('emotrack:secoes', montar)
     return () => {
+      window.removeEventListener('emotrack:secoes', montar)
       io?.disconnect()
       mo.disconnect()
       window.removeEventListener('resize', montar)

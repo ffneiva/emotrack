@@ -10,7 +10,7 @@ import { carregarMotor, type Motor } from '@/lib/movimento'
  */
 export function useMotor(
   ref: RefObject<HTMLElement | null>,
-  armar: (motor: Motor, raiz: HTMLElement, calmo: boolean) => void,
+  armar: (motor: Motor, raiz: HTMLElement, calmo: boolean, ctx: gsap.Context) => void,
 ) {
   useEffect(() => {
     const raiz = ref.current
@@ -21,7 +21,7 @@ export function useMotor(
     carregarMotor()
       .then((motor) => {
         if (cancelado) return
-        const ctx = motor.gsap.context(() => armar(motor, raiz, calmo), raiz)
+        const ctx = motor.gsap.context((self) => armar(motor, raiz, calmo, self), raiz)
         desfazer = () => ctx.revert()
       })
       .catch(() => {})

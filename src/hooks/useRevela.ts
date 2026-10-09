@@ -35,9 +35,11 @@ export function useRevela() {
     // pelas seções. Vigiar a página inteira disparava a cada texto que muda.
     const mo = new MutationObserver(varrer)
     mo.observe(document.getElementById('conteudo') ?? document.body, { childList: true })
+    window.addEventListener('emotrack:secoes', varrer)
     return () => {
       io.disconnect()
       mo.disconnect()
+      window.removeEventListener('emotrack:secoes', varrer)
     }
   }, [])
 }

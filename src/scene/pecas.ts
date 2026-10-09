@@ -10,6 +10,7 @@ import {
   InstancedMesh,
   Matrix4,
   Mesh,
+  MeshLambertMaterial,
   MeshStandardMaterial,
   NeutralToneMapping,
   PerspectiveCamera,
@@ -98,7 +99,7 @@ function geometriaDaPeca(compacto: boolean) {
 }
 
 /** A cara, no shader do material físico (olhos, boca e bochechas). */
-function comRosto(mat: MeshStandardMaterial, uTempo: { value: number }) {
+function comRosto(mat: MeshStandardMaterial | MeshLambertMaterial, uTempo: { value: number }) {
   mat.onBeforeCompile = (sh: WebGLProgramParametersWithUniforms) => {
     sh.uniforms.uTempo = uTempo
     sh.vertexShader = sh.vertexShader
@@ -292,7 +293,7 @@ export class Pecas {
     this.calmo = calmo
     this.n = compacto ? 140 : 200
     this.kFantasma = fantasma(this.n)
-    this.dprMax = Math.min(window.devicePixelRatio || 1, compacto ? 1.25 : 1.5)
+    this.dprMax = Math.min(window.devicePixelRatio || 1, compacto ? 1 : 1.5)
     this.dpr = this.dprMax
     // MSAA só em tela comum; em tela densa a própria resolução já suaviza.
     this.renderer = new WebGLRenderer({
@@ -319,7 +320,9 @@ export class Pecas {
     this.cena.add(recorte)
     this.cena.fog = new Fog('#100d2e', 22, 60)
 
-    const mat = new MeshStandardMaterial({ roughness: 0.5, metalness: 0 })
+    // No celular, Lambert (difuso, sem o cálculo de PBR por pixel): na tela
+    // pequena a diferença não aparece, e a placa de vídeo do celular respira.
+    const mat = compacto ? new MeshLambertMaterial() : new MeshStandardMaterial({ roughness: 0.5, metalness: 0 })
     comRosto(mat, this.uTempo)
     const geo = geometriaDaPeca(compacto)
     this.aHumor = new InstancedBufferAttribute(new Float32Array(this.n), 1)
@@ -487,7 +490,7 @@ export class Pecas {
   destruir() {
     this.pausar()
     this.malha.geometry.dispose()
-    ;(this.malha.material as MeshStandardMaterial).dispose()
+    ;(this.malha.material as MeshStandardMaterial | MeshLambertMaterial).dispose()
     this.renderer.dispose()
   }
 

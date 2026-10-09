@@ -41,6 +41,7 @@ export function useEfeitos() {
     varrer()
     const mo = new MutationObserver(varrer)
     mo.observe(document.getElementById('conteudo') ?? document.body, { childList: true })
+    window.addEventListener('emotrack:secoes', varrer)
 
     /* ── cursor ── */
     const cursor = document.createElement('div')
@@ -135,6 +136,7 @@ export function useEfeitos() {
     observarTemas()
     const moTemas = new MutationObserver(observarTemas)
     moTemas.observe(document.getElementById('conteudo') ?? document.body, { childList: true })
+    window.addEventListener('emotrack:secoes', observarTemas)
 
     window.addEventListener('pointermove', mover, { passive: true })
     document.documentElement.addEventListener('pointerleave', sair)
@@ -143,8 +145,10 @@ export function useEfeitos() {
     return () => {
       io.disconnect()
       mo.disconnect()
+      window.removeEventListener('emotrack:secoes', varrer)
       temas.disconnect()
       moTemas.disconnect()
+      window.removeEventListener('emotrack:secoes', observarTemas)
       cancelAnimationFrame(raf)
       cursor.remove()
       window.removeEventListener('pointermove', mover)

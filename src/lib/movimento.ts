@@ -44,12 +44,12 @@ export function carregarMotor(): Promise<Motor> {
  * foto pequena e um título enorme com a mesma velocidade parecem estar no
  * mesmo plano de profundidade — que é o que o olho entende como parallax.
  */
-export function parallaxDeclarativo({ gsap }: Motor, escopo: HTMLElement) {
+export function parallaxDeclarativo({ gsap }: Motor, escopo: HTMLElement, ctx: gsap.Context) {
   for (const el of escopo.querySelectorAll<HTMLElement>('[data-velocidade]')) {
     const v = Number(el.dataset.velocidade)
-    if (!v) continue
+    if (!v || !novo(el)) continue
     const gatilho = el.closest<HTMLElement>('[data-cena]') ?? el
-    gsap.fromTo(
+    perto(ctx, gatilho, () => gsap.fromTo(
       el,
       { y: () => -v * window.innerHeight * 0.5 },
       {
@@ -63,6 +63,38 @@ export function parallaxDeclarativo({ gsap }: Motor, escopo: HTMLElement) {
           invalidateOnRefresh: true,
         },
       },
-    )
+    ))
   }
+}
+
+// Cada elemento é armado uma vez só (as seções chegam em etapas, e cada etapa arma a página de novo).
+const armados = new WeakSet<Element>()
+export function novo(el: Element) {
+  if (armados.has(el)) return false
+  armados.add(el)
+  return true
+}
+
+/**
+ * Cria a animação só quando o elemento chega perto da tela (a ~1 tela de
+ * distância). Criar todas no carregamento obrigava o navegador a medir a
+ * página inteira de uma vez — no celular, quase um segundo de tela travada
+ * logo depois do herói. E as seções longe da tela (content-visibility) nem
+ * têm layout calculado até lá.
+ */
+export function perto(ctx: gsap.Context, el: Element, criar: () => unknown) {
+  ctx.add(() => {
+    const io = new IntersectionObserver(
+      (es) => {
+        if (!es.some((e) => e.isIntersecting)) return
+        io.disconnect()
+        ctx.add(() => {
+          criar()
+        })
+      },
+      { rootMargin: '100% 0px 100% 0px' },
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  })
 }

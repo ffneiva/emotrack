@@ -411,3 +411,14 @@ details[open] .mais {
 .palavra {
   display: inline-block;
 }
+
+/*
+ * Seções opacas longe da tela: o navegador pula layout e pintura delas até
+ * chegarem perto (a altura estimada segura a barra de rolagem; depois do
+ * primeiro desenho, o "auto" guarda a altura real). Era o layout da página
+ * inteira de uma vez que travava o celular logo depois do herói.
+ */
+[data-opaco] {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 1800px;
+}

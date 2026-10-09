@@ -1,4 +1,4 @@
-import type { Motor } from './movimento'
+import { type Motor, novo, perto } from './movimento'
 
 /**
  * As cenas de rolagem da página (GSAP + ScrollTrigger), armadas uma vez para
@@ -66,9 +66,11 @@ function semente(i: number) {
   return x - Math.floor(x)
 }
 
-export function armarCenas({ gsap }: Motor, escopo: HTMLElement, compacto: boolean) {
+export function armarCenas({ gsap }: Motor, escopo: HTMLElement, compacto: boolean, ctx: gsap.Context) {
   // Títulos: do caos à clareza.
   for (const h of escopo.querySelectorAll<HTMLElement>('h2.titulo:not([data-sem-caos]), [data-caos]')) {
+    if (!novo(h)) continue
+    perto(ctx, h, () => {
     const palavras = palavrasDe(h)
     const forca = compacto ? 0.55 : 1
     gsap.fromTo(
@@ -98,38 +100,44 @@ export function armarCenas({ gsap }: Motor, escopo: HTMLElement, compacto: boole
         scrollTrigger: { trigger: h, start: 'top 85%', toggleActions: 'play none none none' },
       },
     )
+    })
   }
 
   // Fotos que se abrem.
   for (const el of escopo.querySelectorAll<HTMLElement>('[data-revela-foto]')) {
+    if (!novo(el)) continue
+    perto(ctx, el, () => {
     const img = el.querySelector('img')
     const tl = gsap.timeline({ scrollTrigger: { trigger: el, start: 'top 92%', end: 'top 40%', scrub: 0.5 } })
     tl.fromTo(el, { clipPath: 'inset(14% 12% 14% 12% round 2rem)' }, { clipPath: 'inset(0% 0% 0% 0% round 2rem)', ease: 'none' }, 0)
     if (img) tl.fromTo(img, { scale: 1.28 }, { scale: 1, ease: 'none' }, 0)
+    })
   }
 
   // Faixas de texto que correm de lado.
   for (const el of escopo.querySelectorAll<HTMLElement>('[data-faixa]')) {
+    if (!novo(el)) continue
     const sentido = Number(el.dataset.faixa) || 1
-    gsap.fromTo(
+    perto(ctx, el, () => gsap.fromTo(
       el,
       { xPercent: sentido > 0 ? 0 : -30 },
       { xPercent: sentido > 0 ? -30 : 0, ease: 'none', scrollTrigger: { trigger: el, start: 'top bottom', end: 'bottom top', scrub: true } },
-    )
+    ))
   }
 
   // Palavras que acendem uma a uma.
   for (const el of escopo.querySelectorAll<HTMLElement>('[data-acende]')) {
-    const palavras = palavrasDe(el)
-    gsap.fromTo(
-      palavras,
+    if (!novo(el)) continue
+    perto(ctx, el, () => gsap.fromTo(
+      palavrasDe(el),
       { opacity: 0.14 },
       { opacity: 1, ease: 'none', stagger: 0.1, scrollTrigger: { trigger: el, start: 'top 80%', end: 'bottom 45%', scrub: true } },
-    )
+    ))
   }
 
   // Números que contam.
   for (const el of escopo.querySelectorAll<HTMLElement>('[data-conta]')) {
+    if (!novo(el)) continue
     const final = el.dataset.conta ?? el.textContent ?? ''
     const m = final.match(/^(\D*)([\d.,]+)(.*)$/)
     if (!m) continue
@@ -137,7 +145,7 @@ export function armarCenas({ gsap }: Motor, escopo: HTMLElement, compacto: boole
     const decimais = num.includes(',') ? num.split(',')[1].length : 0
     const alvo = Number(num.replace(/\./g, '').replace(',', '.'))
     const obj = { v: 0 }
-    gsap.to(obj, {
+    perto(ctx, el, () => gsap.to(obj, {
       v: alvo,
       duration: 1.6,
       ease: 'expo.out',
@@ -145,6 +153,6 @@ export function armarCenas({ gsap }: Motor, escopo: HTMLElement, compacto: boole
       onUpdate: () => {
         el.textContent = `${antes}${obj.v.toFixed(decimais).replace('.', ',')}${depois}`
       },
-    })
+    }))
   }
 }

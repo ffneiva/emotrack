@@ -1,6 +1,7 @@
 import { type RefObject, useEffect, useRef, useState } from 'react'
 import { useIsDesktop } from '@/hooks/useMediaQuery'
 import { capitulo, capituloEm, type Mapa, medirMapa } from '@/lib/capitulos'
+import { carregarMotor } from '@/lib/movimento'
 import { publicarCapitulo } from '@/lib/rolagem'
 import { cn } from '@/lib/utils'
 import { DIAS } from '@/lib/semana'
@@ -117,14 +118,24 @@ export function Palco({ raiz }: Props) {
         }
         // Remede quando a página muda de altura (seções preguiçosas, fontes, imagens).
         let medida = 0
+        let refrescar = 0
         const remedir = () => {
           cancelAnimationFrame(medida)
+          window.clearTimeout(refrescar)
           medida = requestAnimationFrame(() => {
             const r = raiz.current
             if (!r) return
             mapa = medirMapa(r)
             aoRolar()
           })
+          // As seções que acabaram de ganhar layout mudam a altura da página:
+          // os gatilhos de rolagem já armados precisam se remedir.
+          window.clearTimeout(refrescar)
+          refrescar = window.setTimeout(() => {
+            carregarMotor()
+              .then(({ ScrollTrigger }) => ScrollTrigger.refresh())
+              .catch(() => {})
+          }, 250)
         }
         const ro = new ResizeObserver(remedir)
         if (raiz.current) ro.observe(raiz.current)

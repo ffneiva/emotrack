@@ -6,3 +6,4 @@ test-results
 *.log
 _teste*.mjs
 .env*
+_dist-perfil

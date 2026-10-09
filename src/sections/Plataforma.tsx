@@ -3,6 +3,7 @@ import { IconeFuncao, IconeSeta } from '@/components/Icones'
 import { useMotor } from '@/hooks/useMotor'
 import { EMOCOES } from '@/lib/cores'
 import { LINKS } from '@/lib/links'
+import { perto } from '@/lib/movimento'
 
 const PONTOS = [
   { i: 'relogio', t: 'Contexto antes da sessão', p: 'O que a família registrou na semana, organizado para você.' },
@@ -159,8 +160,9 @@ function Painel() {
 export function Plataforma() {
   const ref = useRef<HTMLElement>(null)
   // As barras crescem e a rosca se desenha quando o painel entra na tela.
-  useMotor(ref, ({ gsap }, raiz, calmo) => {
+  useMotor(ref, ({ gsap }, raiz, calmo, ctx) => {
     if (calmo) return
+    perto(ctx, raiz, () => {
     const gatilho = { trigger: raiz.querySelector('[data-quadro]'), start: 'top 75%' }
     gsap.from(raiz.querySelectorAll('[data-barra]'), { scaleX: 0, duration: 1.4, ease: 'expo.out', stagger: 0.08, scrollTrigger: gatilho })
     gsap.from(raiz.querySelectorAll('[data-rosca]'), { strokeDasharray: '0 100', duration: 1.6, ease: 'expo.out', stagger: 0.1, scrollTrigger: gatilho })
@@ -171,6 +173,7 @@ export function Plataforma() {
       transformPerspective: 1600,
       ease: 'none',
       scrollTrigger: { trigger: raiz.querySelector('[data-quadro]'), start: 'top bottom', end: 'top 30%', scrub: true },
+    })
     })
   })
   return (
